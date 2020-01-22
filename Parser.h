@@ -30,6 +30,11 @@ private:
 	AST::AST* STR();
 	AST::AST* ID();
 	AST::AST* Value();
+	AST::AST* Block();
+	AST::AST* Args();
+	AST::AST* Params();
+	AST::AST* FuncDef();
+	AST::AST* FunCall();
 
 	//∆•≈‰token
 	template<typename... Args>

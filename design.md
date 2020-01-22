@@ -25,7 +25,7 @@
 
 ### 块
 
-- [ ] Block : "{" SS "}"
+- [ ] Block : "{" SS "}" | "{" "}"
 
 ### 列表
 
@@ -49,4 +49,4 @@
 ### 函数
 
 - [ ] FuncDef : "func" ID Params BLOCK
-- [ ] FunCall : "func" ID Args
+- [ ] FunCall : ID Args

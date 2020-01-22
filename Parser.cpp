@@ -59,7 +59,7 @@ AST::AST* Parser::Stats()
 	AST::Stats* p = head;
 	for (;;)
 	{
-		if (Match('end'))
+		if (Match('end') || '}' == Peek().type)
 		{
 			//std::cout << "语法分析完成:" << std::endl;
 			p->children[0] = new AST::ACC();
@@ -186,10 +186,7 @@ AST::AST* Parser::Assignment()
 	if (!id) return nullptr;
 	if (!Match('=')) return id;
 	auto val = Value();
-	auto ass = new AST::BinExpr<'='>{};
-	ass->children[0] = id;
-	ass->children[1] = val;
-	return ass;
+	return AST::CreateBinExpr<'='>(id, val);
 }
 
 AST::AST* Parser::Num()
@@ -212,6 +209,72 @@ AST::AST* Parser::Value()
 {
 	if (auto e = Expr()) return e;
 	if (auto str = STR()) return str;
+	return nullptr;
+}
+
+AST::AST* Parser::Block()
+{
+	if (!Match('{')) return nullptr;
+	auto ss = Stats();
+	if (!Match('}')) return nullptr;
+	return ss;
+}
+
+AST::AST* Parser::Args()
+{
+	if (Match('(', ')')) return new AST::Args{};
+	if (!Match('(')) return nullptr;
+	auto head = new AST::Args{};
+	auto param = head;
+	do {
+		auto value = Value();
+		if (!value) return nullptr;
+		auto temp = new AST::Args{};
+		param->children[0] = value;
+		param->children[1] = temp;
+		param = temp;
+	} while (Match(','));
+	if (!Match(')')) return nullptr;
+	return head;
+}
+
+AST::AST* Parser::Params()
+{
+	if (Match('(', ')')) return new AST::Params{};
+	if (!Match('(')) return nullptr;
+	auto head = new AST::Params{};
+	auto param = head;
+	do {
+		auto id = ID();
+		if (!id) return nullptr;
+		auto temp = new AST::Params{};
+		param->children[0] = id;
+		param->children[1] = temp;
+		param = temp;
+	} while (Match(','));
+	if (!Match(')')) return nullptr;
+	return head;
+}
+
+AST::AST* Parser::FuncDef()
+{
+	if (!Match('func')) return nullptr;
+	if (auto id = ID())
+	{
+		if (auto params = Params())
+		{
+			if (auto block = Block())
+			{
+				auto funcdef = new AST::FuncDef{};
+			}
+		}
+	}
+
+	return nullptr;
+}
+
+AST::AST* Parser::FunCall()
+{
 	return nullptr;
 }
 
