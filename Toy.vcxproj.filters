@@ -54,7 +54,7 @@
   <ItemGroup>
     <Text Include="token.txt" />
     <Text Include="ast.txt" />
-    <Text Include="test.toy" />
+    <Text Include="test.txt" />
   </ItemGroup>
   <ItemGroup>
     <None Include="design.md" />

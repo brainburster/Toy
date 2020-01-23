@@ -31,7 +31,7 @@ int main()
 
 	{
 		Redirect rd("./token.txt");
-		ast = parser.Parse("./test.toy");
+		ast = parser.Parse("./test.txt");
 	}
 
 	{

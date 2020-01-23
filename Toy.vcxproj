@@ -166,7 +166,7 @@
   </ItemGroup>
   <ItemGroup>
     <Text Include="ast.txt" />
-    <Text Include="test.toy" />
+    <Text Include="test.txt" />
     <Text Include="token.txt" />
   </ItemGroup>
   <ItemGroup>

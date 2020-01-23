@@ -13,7 +13,7 @@ inline void Interpreter::Print(T value)
 template<>
 inline void Interpreter::Print(AST::ID* id)
 {
-	auto value = _env.get(id->id);
+	auto value = _global->get(id->id);
 	if (value.has_value())
 	{
 		if (value->type == 'num')
@@ -43,6 +43,66 @@ bool Interpreter::Eval(AST::AST* ast)
 	return true;
 }
 
+bool Interpreter::EvalFuncDef(AST::FuncDef* funcdef)
+{
+	auto id = dynamic_cast<AST::ID*>(funcdef->children[0]);
+	if (!id) return false;
+	_global->push(id->id, funcdef);
+	return true;
+}
+
+bool Interpreter::EvalFunCall(AST::FunCall* funcall)
+{
+	auto id = dynamic_cast<AST::ID*>(funcall->children[0]);
+	auto args = dynamic_cast<AST::Args*>(funcall->children[1]);
+	if (!id || !args) return false;
+	auto temp = _global->get(id->id);
+	if (!temp.has_value()) return false;
+	auto funcdef = dynamic_cast<AST::FuncDef*>(temp->value.astValue);
+	if (!funcdef) return false;
+	auto params = dynamic_cast<AST::Params*>(funcdef->children[1]);
+	auto block = dynamic_cast<AST::Stats*>(funcdef->children[2]);
+	if (!params || !block) return false;
+	std::list<int> paramlist;
+	for (;;)
+	{
+		auto param = dynamic_cast<AST::ID*>(AST::L(params));
+		if (!param) break;
+		paramlist.push_back(param->id);
+		params = dynamic_cast<AST::Params*>(AST::R(params));
+		if (!params) break;
+	}
+	Env env{};
+	auto old = _global;
+	_global = &env; //暂时不支持递归，应该把函数与环境分离的
+	//参数压栈
+	for (int param : paramlist)
+	{
+		AST::AST* value = AST::L(args);
+		EvalAssignment(param, value);
+		if (args = dynamic_cast<AST::Args*>(AST::R(args)); !args) break;
+	}
+	Eval(block);
+	auto result = _global->pop();
+	_global = old;
+	if (!result.has_value()) return false;
+	switch (result->type)
+	{
+	case 'num':
+		_global->push(result->value.dValue);
+		break;
+	case 'str':
+		_global->push(result->value.iValue);
+		break;
+	case 'ast':
+		_global->push(result->value.astValue);
+		break;
+	default:
+		break;
+	}
+	return true;
+}
+
 bool Interpreter::EvalStats(AST::AST* stat)
 {
 	if (auto echo = dynamic_cast<AST::Echo*>(stat))
@@ -56,29 +116,65 @@ bool Interpreter::EvalStats(AST::AST* stat)
 		{
 			return false;
 		}
-		if (auto str = dynamic_cast<AST::StrValue*>(AST::R(ass)))
+		if (EvalAssignment(id->id, AST::R(ass)))
 		{
-			_env.push(id->id, str->id);
-			return true;
-		}
-		if (auto expr = dynamic_cast<AST::BinExpr<>*>(AST::R(ass)))
-		{
-			//计算表达式的值
-			double val = EvalExpr(expr);
-			_env.push(id->id, val);
 			return true;
 		}
 		return false;
 	}
+	if (auto funcdef = dynamic_cast<AST::FuncDef*>(stat)) {
+		return EvalFuncDef(funcdef);
+	}
 	//其他
 	if (auto e = dynamic_cast<AST::BinExpr<>*>(stat))
 	{
-		Print(EvalExpr(e));
+		if (!EvalExpr(e)) return false;
+		Print(_global->top()->value.dValue);
 		return true;
 	}
 	if (auto str = dynamic_cast<AST::StrValue*>(stat))
 	{
+		//EvalStr(str);
 		Print(EvalStr(str));
+		return true;
+	}
+	return false;
+}
+
+bool Interpreter::EvalAssignment(int id, AST::AST* value)
+{
+	if (auto str = dynamic_cast<AST::StrValue*>(value))
+	{
+		_global->push(id, str->id);
+		return true;
+	}
+	if (auto expr = dynamic_cast<AST::BinExpr<>*>(value))
+	{
+		//计算表达式的值
+		if (!EvalExpr(expr)) return false;
+		_global->push(id, _global->pop()->value.dValue);
+		return true;
+	}
+	if (auto funcall = dynamic_cast<AST::FunCall*>(value))
+	{
+		if (!EvalFunCall(funcall)) return false;
+		auto result = _global->pop();
+		if (!result.has_value()) return false;
+		switch (result->type)
+		{
+		case 'str':
+			_global->push(id, result->value.iValue);
+			break;
+		case 'num':
+			_global->push(id, result->value.dValue);
+			break;
+		case 'ast':
+			_global->push(id, result->value.astValue);
+			break;
+		default:
+			_global->push(id, 0);
+			break;
+		}
 		return true;
 	}
 	return false;
@@ -94,8 +190,8 @@ bool Interpreter::EvalEcho(AST::Echo* echo)
 	}
 	if (auto e = dynamic_cast<AST::BinExpr<>*>(childern))
 	{
-		auto value = EvalExpr(e);
-		Print(value);
+		if (!EvalExpr(e))return false;
+		Print(_global->pop()->value.dValue);
 		return true;
 	}
 	if (auto str = dynamic_cast<AST::StrValue*>(childern))
@@ -109,101 +205,74 @@ bool Interpreter::EvalEcho(AST::Echo* echo)
 	return false;
 }
 
-double Interpreter::EvalExpr(AST::Expr* expr)
+bool Interpreter::EvalExpr(AST::Expr* expr)
 {
+	//if (!expr)
+	//{
+	//	_global->push(0.0);
+	//	return true;
+	//}
 	if (auto d = dynamic_cast<AST::NumValue*>(expr))
 	{
-		return d->value;
+		_global->push(d->value);
+		return true;
 	}
 	if (auto id = dynamic_cast<AST::ID*>(expr))
 	{
-		auto value = _env.get(id->id);
-		if (!value.has_value()) return 0.0;
+		auto value = _global->get(id->id);
+		if (!value.has_value()) return false;
 		if (value->type != 'num')
 		{
 			double v = atof(StringTable::getInstance().GetStr(value->value.iValue));
-			return v;
+			_global->push(v);
+			return true;
 		}
-		return value->value.dValue;
+		_global->push(value->value.dValue);
+		return true;
 	}
 	AST::Tree<2>* node;
-	double v1 = 0.0;
-	double v2 = 0.0;
-	if (node = dynamic_cast<AST::Tree<2>*>(expr); !node) return  0.0;
+	if (node = dynamic_cast<AST::Tree<2>*>(expr); !node) return  false;
 
 	if (auto c1 = dynamic_cast<AST::BinExpr<>*>(AST::L(node)))
 	{
-		v1 = EvalExpr(c1);
+		if (!EvalExpr(c1)) return false;
 	}
 	if (auto c2 = dynamic_cast<AST::BinExpr<>*>(AST::R(node)))
 	{
-		v2 = EvalExpr(c2);
+		if (!EvalExpr(c2)) return false;
 	}
 
 	if (typeid(AST::BinExpr<'+'>) == typeid(*expr))
 	{
-		return v1 + v2;
+		_global->push(_global->pop()->value.dValue + _global->pop()->value.dValue);
+		return true;
 	}
 	if (typeid(AST::BinExpr<'-'>) == typeid(*expr))
 	{
-		return v1 - v2;
+		_global->push(_global->pop()->value.dValue - _global->pop()->value.dValue);
+		return true;
 	}
 	if (typeid(AST::BinExpr<'*'>) == typeid(*expr))
 	{
-		return v1 * v2;
+		_global->push(_global->pop()->value.dValue * _global->pop()->value.dValue);
+		return true;
 	}
 	if (typeid(AST::BinExpr<'/'>) == typeid(*expr))
 	{
-		return v1 / v2;
+		_global->push(_global->pop()->value.dValue / _global->pop()->value.dValue);
+		return true;
 	}
 	if (typeid(AST::BinExpr<'**'>) == typeid(*expr))
 	{
-		return pow(v1, v2);
+		_global->push(pow(_global->pop()->value.dValue, _global->pop()->value.dValue));
+		return true;
 	}
-	return 0.0;
+	return false;
 }
 
 inline const char* Interpreter::EvalStr(AST::StrValue* str)
 {
 	return 	StringTable::getInstance().GetStr(str->id);
-}
-
-inline void Env::push(int id, double value)
-{
-	if (auto iter = _map.find(id); iter != _map.end())
-	{
-		int id = iter->second;
-		_stack[id] = { 'num',value };
-	}
-	else
-	{
-		push(value);
-		_map[id] = (int)_stack.size() - 1;
-	}
-}
-
-inline void Env::push(int id, int value)
-{
-	if (auto iter = _map.find(id); iter != _map.end())
-	{
-		int id = iter->second;
-		_stack[id] = { 'str',value };
-	}
-	else
-	{
-		push(value);
-		_map[id] = (int)_stack.size() - 1;
-	}
-}
-
-inline void Env::push(int value)
-{
-	_stack.emplace_back('str', value);
-}
-
-inline void Env::push(double value)
-{
-	_stack.emplace_back('num', value);
 }
 
 inline int Env::find(int id)
@@ -219,16 +288,22 @@ inline int Env::find(int id)
 inline std::optional<Env::Value> Env::pop()
 {
 	if (_stack.size() < 1) return std::optional<Value>{};
-	auto v = _stack.back();
-	_stack.pop_back();
+	auto v = _stack.top();
+	_stack.pop();
 	return v;
+}
+
+std::optional<Env::Value> Env::top()
+{
+	if (_stack.size() < 1) return std::optional<Value>{};
+	return _stack.top();
 }
 
 inline std::optional<Env::Value> Env::get(int id)
 {
 	if (auto iter = _map.find(id); iter != _map.end())
 	{
-		return _stack.at(iter->second);
+		return _variable.at((size_t)iter->second);
 	}
 	return std::optional<Value>{};
 }

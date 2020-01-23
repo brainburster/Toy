@@ -180,9 +180,10 @@ AST::AST* Parser::STR()
 
 AST::AST* Parser::Assignment()
 {
+	if (!Match('id', '=')) return nullptr;
+	Seek(-2);
 	auto id = ID();
-	if (!id) return nullptr;
-	if (!Match('=')) return id;
+	Match('=');
 	auto val = Value();
 	return AST::CreateBinExpr<'='>(id, val);
 }
