@@ -73,6 +73,11 @@ inline void  Env::_push(int id, T value)
 	_variable[id] = { '?',value };
 }
 template<>
+inline void  Env::_push(int id, Env::Value value)
+{
+	_variable[id] = value;
+}
+template<>
 inline void  Env::_push(int id, int value)
 {
 	_variable[id] = { 'str',value };
@@ -92,6 +97,11 @@ template<typename T>
 inline void Env::_push(T value)
 {
 	_variable.emplace_back('?', value);
+}
+template<>
+inline void Env::_push(Env::Value value)
+{
+	_variable.push_back(value);
 }
 template<>
 inline void  Env::_push(int value)
@@ -128,6 +138,11 @@ template<typename T>
 inline void Env::push(T value)
 {
 	_stack.emplace('?', value);
+}
+template<>
+inline void Env::push(Env::Value value)
+{
+	_stack.push(value);
 }
 template<>
 inline void Env::push(double value)

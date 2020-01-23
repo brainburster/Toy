@@ -86,20 +86,7 @@ bool Interpreter::EvalFunCall(AST::FunCall* funcall)
 	auto result = _global->pop();
 	_global = old;
 	if (!result.has_value()) return false;
-	switch (result->type)
-	{
-	case 'num':
-		_global->push(result->value.dValue);
-		break;
-	case 'str':
-		_global->push(result->value.iValue);
-		break;
-	case 'ast':
-		_global->push(result->value.astValue);
-		break;
-	default:
-		break;
-	}
+	_global->push(result.value());
 	return true;
 }
 
@@ -160,21 +147,7 @@ bool Interpreter::EvalAssignment(int id, AST::AST* value)
 		if (!EvalFunCall(funcall)) return false;
 		auto result = _global->pop();
 		if (!result.has_value()) return false;
-		switch (result->type)
-		{
-		case 'str':
-			_global->push(id, result->value.iValue);
-			break;
-		case 'num':
-			_global->push(id, result->value.dValue);
-			break;
-		case 'ast':
-			_global->push(id, result->value.astValue);
-			break;
-		default:
-			_global->push(id, 0);
-			break;
-		}
+		_global->push(id, result.value());
 		return true;
 	}
 	return false;
@@ -207,11 +180,6 @@ bool Interpreter::EvalEcho(AST::Echo* echo)
 
 bool Interpreter::EvalExpr(AST::Expr* expr)
 {
-	//if (!expr)
-	//{
-	//	_global->push(0.0);
-	//	return true;
-	//}
 	if (auto d = dynamic_cast<AST::NumValue*>(expr))
 	{
 		_global->push(d->value);

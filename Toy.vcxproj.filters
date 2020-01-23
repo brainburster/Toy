@@ -57,7 +57,6 @@
     <Text Include="test.txt" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="design.md" />
     <None Include="README.md" />
   </ItemGroup>
 </Project>
