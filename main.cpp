@@ -27,6 +27,8 @@ public:
 
 int main()
 {
+	std::cout << AST::Length<int, int, int>::value << std::endl;
+
 	Parser parser;
 	Interpreter interpreter;
 	AST::AST* ast;

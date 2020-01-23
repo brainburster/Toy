@@ -34,11 +34,11 @@ bool Interpreter::Eval(AST::AST* ast)
 	auto stats = dynamic_cast<AST::Stats*>(ast);
 	while (nullptr != stats)
 	{
-		if (!EvalStats(stats->children[0]))
+		if (!EvalStats(AST::L(stats)))
 		{
 			return false;
 		}
-		stats = dynamic_cast<AST::Stats*>(stats->children[1]);
+		stats = dynamic_cast<AST::Stats*>(AST::R(stats));
 	}
 	return true;
 }
@@ -51,17 +51,17 @@ bool Interpreter::EvalStats(AST::AST* stat)
 	}
 	if (auto ass = dynamic_cast<AST::BinExpr<'='>*>(stat))
 	{
-		auto id = dynamic_cast<AST::ID*>(ass->children[0]);
+		auto id = dynamic_cast<AST::ID*>(AST::L(ass));
 		if (!id)
 		{
 			return false;
 		}
-		if (auto str = dynamic_cast<AST::StrValue*>(ass->children[1]))
+		if (auto str = dynamic_cast<AST::StrValue*>(AST::R(ass)))
 		{
 			_env.push(id->id, str->id);
 			return true;
 		}
-		if (auto expr = dynamic_cast<AST::BinExpr<>*>(ass->children[1]))
+		if (auto expr = dynamic_cast<AST::BinExpr<>*>(AST::R(ass)))
 		{
 			//计算表达式的值
 			double val = EvalExpr(expr);
@@ -86,7 +86,7 @@ bool Interpreter::EvalStats(AST::AST* stat)
 
 bool Interpreter::EvalEcho(AST::Stat<'echo'>* echo)
 {
-	auto childern = echo->children[0];
+	auto childern = AST::L(echo);
 	if (auto id = dynamic_cast<AST::ID*>(childern))
 	{
 		Print(id);
@@ -131,11 +131,11 @@ double Interpreter::EvalExpr(AST::Expr* expr)
 	double v2 = 0.0;
 	if (node = dynamic_cast<AST::Tree<2>*>(expr); !node) return  0.0;
 
-	if (auto c1 = dynamic_cast<AST::BinExpr<>*>(node->children[0]))
+	if (auto c1 = dynamic_cast<AST::BinExpr<>*>(AST::L(node)))
 	{
 		v1 = EvalExpr(c1);
 	}
-	if (auto c2 = dynamic_cast<AST::BinExpr<>*>(node->children[1]))
+	if (auto c2 = dynamic_cast<AST::BinExpr<>*>(AST::R(node)))
 	{
 		v2 = EvalExpr(c2);
 	}

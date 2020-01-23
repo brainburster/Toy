@@ -87,8 +87,21 @@ namespace AST
 	template<> struct Stat<'else'> : Stat<'else', 1> {};
 	template<> struct Stat<'elif'> : Stat<'elif', 2> {};
 
+	template<typename T, typename Enable = std::enable_if_t<1 <= std::extent_v<decltype(T::children)>>>
+	AST*& L(T* t)
+	{
+		return t->children[0];
+	}
+	template<typename T, typename Enable = std::enable_if_t<2 <= std::extent_v<decltype(T::children)>>>
+	AST*& R(T* t)
+	{
+		return t->children[1];
+	}
+
+	template<typename... Args>
+	struct Length;
 	template<typename T, typename... Args>
-	struct Length
+	struct Length<T, Args...>
 	{
 		enum { value = Length<Args...>::value + 1 };
 	};
@@ -98,34 +111,63 @@ namespace AST
 		enum { value = 1 };
 	};
 	template<>
-	struct Length<class NullType>
+	struct Length<>
 	{
 		enum { value = 0 };
 	};
 	template<typename... Args>
-	constexpr int Length_t = Length<Args...>::value;
+	constexpr int Length_v = Length<Args...>::value;
 
 	//树之工厂
-	template<typename T, typename... Args, typename Enable = std::enable_if_t<std::is_base_of_v<Tree<Length_t<Args...>>, T> && (std::is_base_of_v<AST, std::remove_pointer_t<Args>> &&...)>>
-	inline auto Create(Args... args) //-> Tree<Length_t<Args...>>*
+	template<typename T, typename... Args, typename Enable = std::enable_if_t<std::extent_v<decltype(T::children)> >= Length_v<Args...> && ((std::is_base_of_v<AST, std::remove_pointer_t<Args>> || std::is_same_v<nullptr_t, Args>) &&...) >>
+	inline auto Create(Args... args) ->T* //-> Tree<std::extent_v<decltype(T::children)>>*
 	{
 		auto* tree = new T{};
 		int i = 0;
-		std::initializer_list<int>{ ((tree->children[i++] = args), 0)... };
+		//std::initializer_list<int>{ ((tree->children[i++] = args), 0)... }; //c++17之前的写法
+		(((tree->children[i++] = args), 0) + ... + 0); //写成3元折叠表达式的目的是为了使args可以为空
 		return tree;
+	}
+
+	template<typename T, typename Enable = decltype(T::id)>
+	inline auto Create(int id)
+	{
+		auto leaf = new T{};
+		leaf->id = id;
+		return leaf;
+	}
+
+	template<typename T, typename Enable = decltype(T::value)>
+	inline auto Create(double num)
+	{
+		auto leaf = new T{};
+		leaf->value = num;
+		return leaf;
+	}
+
+	template<typename U, typename V> constexpr bool is_same_v = false;
+	template<typename U> constexpr bool is_same_v<U, U> = true;
+	template<typename T, typename... Types> constexpr bool is_one_of_v = (is_same_v<T, Types> || ...);
+	//template<bool b, typename T = void>
+	//struct enable_if {};
+	//template<typename T>
+	//struct enable_if <true, T> { using type = T; };
+	//template<bool b, typename T = void> using enable_if_t = typename enable_if<b, T>::type;
+
+	template<typename T, typename Enable = std::enable_if_t<is_one_of_v<T, ACC, Error>>>
+	inline auto Create()
+	{
+		return new T{};
 	}
 
 	//二元操作符工厂
 	template<int type>
 	inline auto CreateBinExpr(AST* a, AST* b)
 	{
-		//auto e = new BinExpr<type>{};
-		//e->children[0] = a;
-		//e->children[1] = b;
-		//return e;
 		return Create<BinExpr<type>>(a, b);
 	};
 
+	//例如，使 '++'('+'<<8|'+') 转化 为 "++"
 	inline std::string ASTypeToStr<>::toString()
 	{
 		int tempi = type();

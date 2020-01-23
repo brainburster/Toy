@@ -55,14 +55,14 @@ void Parser::Scan(const char* path)
 
 AST::AST* Parser::Stats()
 {
-	AST::Stats* head = new AST::Stats();
+	AST::Stats* head = AST::Create<AST::Stats>();
 	AST::Stats* p = head;
 	for (;;)
 	{
 		if (Match('end') || '}' == Peek().type)
 		{
 			//std::cout << "语法分析完成:" << std::endl;
-			p->children[0] = new AST::ACC();
+			AST::L(p) = AST::Create<AST::ACC>();
 			break;
 		}
 		else if (Match(';'))
@@ -71,16 +71,16 @@ AST::AST* Parser::Stats()
 		}
 		else if (auto stat = Stat())
 		{
-			p->children[0] = stat; //左子树当前语句
+			AST::L(p) = stat; //左子树当前语句
 		}
 		else
 		{
-			p->children[0] = new AST::Error();
+			AST::L(p) = AST::Create<AST::Error>();
 			break;
 		}
 
-		auto* next = new AST::Stats();
-		p->children[1] = next; //右子树下一段语句
+		auto* next = AST::Create<AST::Stats>();
+		AST::R(p) = next; //右子树下一段语句
 		p = next;
 	}
 	return head;
@@ -100,9 +100,7 @@ AST::AST* Parser::EchoStat()
 	if (!Match('echo', '(')) return nullptr;
 	if (val = Value(); !val) return nullptr;
 	if (!Match(')')) return nullptr;
-	auto p = new AST::Stat<'echo'>{};
-	p->children[0] = val;
-	return p;
+	return AST::Create<AST::Stat<'echo'>>(val);
 }
 
 AST::AST* Parser::Expr()
@@ -175,9 +173,7 @@ AST::AST* Parser::PrimExpr()
 AST::AST* Parser::STR()
 {
 	if (!Match('str')) return nullptr;
-	auto str = new AST::StrValue{};
-	str->id = Peek(-1).value.iValue;
-	return str;
+	return AST::Create<AST::StrValue>(Peek(-1).value.iValue);
 }
 
 AST::AST* Parser::Assignment()
@@ -192,17 +188,13 @@ AST::AST* Parser::Assignment()
 AST::AST* Parser::Num()
 {
 	if (!Match('num'))	return nullptr;
-	auto d = new  AST::NumValue;
-	d->value = Peek(-1).value.dValue;
-	return d;
+	return AST::Create<AST::NumValue>(Peek(-1).value.dValue);
 }
 
 AST::AST* Parser::ID()
 {
 	if (!Match('id')) return nullptr;
-	auto id = new AST::ID{};
-	id->id = Peek(-1).value.iValue;
-	return id;
+	return AST::Create<AST::ID>(Peek(-1).value.iValue);
 }
 
 AST::AST* Parser::Value()
@@ -222,17 +214,17 @@ AST::AST* Parser::Block()
 
 AST::AST* Parser::Args()
 {
-	if (Match('(', ')')) return new AST::Args{};
+	if (Match('(', ')')) return AST::Create<AST::Args>();
 	if (!Match('(')) return nullptr;
-	auto head = new AST::Args{};
-	auto param = head;
+	auto head = AST::Create<AST::Args>();
+	auto arg = head;
 	do {
 		auto value = Value();
 		if (!value) return nullptr;
-		auto temp = new AST::Args{};
-		param->children[0] = value;
-		param->children[1] = temp;
-		param = temp;
+		auto temp = AST::Create<AST::Args>();
+		AST::L(arg) = value;
+		AST::R(arg) = temp;
+		arg = temp;
 	} while (Match(','));
 	if (!Match(')')) return nullptr;
 	return head;
@@ -240,16 +232,16 @@ AST::AST* Parser::Args()
 
 AST::AST* Parser::Params()
 {
-	if (Match('(', ')')) return new AST::Params{};
+	if (Match('(', ')')) return  AST::Create< AST::Params>();
 	if (!Match('(')) return nullptr;
-	auto head = new AST::Params{};
+	auto head = AST::Create< AST::Params>();
 	auto param = head;
 	do {
 		auto id = ID();
 		if (!id) return nullptr;
-		auto temp = new AST::Params{};
-		param->children[0] = id;
-		param->children[1] = temp;
+		auto temp = AST::Create< AST::Params>();
+		AST::L(param) = id;
+		AST::L(param) = temp;
 		param = temp;
 	} while (Match(','));
 	if (!Match(')')) return nullptr;
@@ -265,7 +257,7 @@ AST::AST* Parser::FuncDef()
 		{
 			if (auto block = Block())
 			{
-				auto funcdef = new AST::FuncDef{};
+				auto funcdef = AST::Create<AST::FuncDef>(id, params, block);
 			}
 		}
 	}
