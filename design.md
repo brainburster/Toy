@@ -12,9 +12,9 @@
 ### 语句
 
 - [x] SS : {S}
-- [x] S : ECHO "(" VAR ")" | ASS | VAL
+- [x] S : ECHO "(" VAR ")" | ASS | VAL | FuncDef | Funcall
 - [x] ASS : ID | ID "=" VAL
-- [ ] VAL : STR | E | BOOL | FuncDef | Funcall
+- [ ] VAL : STR | E | BOOL | Funcall
 
 ### 计算表达式
 

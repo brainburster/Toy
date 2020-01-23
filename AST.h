@@ -57,35 +57,30 @@ namespace AST
 	};
 	template<> struct ASTypeToStr<>
 	{
-		virtual int type() { return NULL; }
+		virtual int type() = 0;
 		std::string toString();
 	};
 
 	//2元表达式
-	template<int t = NULL> struct BinExpr :Tree<2>, ASTypeToStr<t>, BinExpr<> {};
+	template<int t = NULL> struct BinExpr : Tree<2>, ASTypeToStr<t>, BinExpr<> {};
 	template<> struct BinExpr<> { virtual void RTTI() {} };
 	//表达式
 	using Expr = BinExpr<>;
 
 	//标识符
-	struct ID :Tree<0>, Expr { int id = 0; };
+	struct ID : Tree<0>, Expr { int id = 0; };
 	using Name = ID;
 	//值
-	struct NumValue :Tree<0>, Expr { double value = 0; };
-	struct StrValue :Tree<0> { int id = 0; };
+	struct NumValue : Tree<0>, Expr { double value = 0; };
+	struct StrValue : Tree<0> { int id = 0; };
 	//实参，形参列表
 	struct Args : Tree<2> {};
 	struct Params : Tree<2> {};
-	struct FuncDef : Tree<3> {};
-	struct FunCall : Tree<2> {};
 	//语句
 	struct Stats : Tree<2> {};
-	template<int t = NULL, int n = 0> struct Stat : Stat<>, Tree<n>, ASTypeToStr<t> {};
-	template<> struct Stat<> {};
-	template<> struct Stat<'echo'> : Stat<'echo', 1> {};
-	template<> struct Stat<'if'> : Stat<'if', 3> {};
-	template<> struct Stat<'else'> : Stat<'else', 1> {};
-	template<> struct Stat<'elif'> : Stat<'elif', 2> {};
+	struct Echo : Tree<1> {};
+	struct FuncDef : Tree<3> {};
+	struct FunCall : Tree<2> {};
 
 	template<typename T, typename Enable = std::enable_if_t<1 <= std::extent_v<decltype(T::children)>>>
 	AST*& L(T* t)

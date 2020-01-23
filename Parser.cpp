@@ -88,19 +88,21 @@ AST::AST* Parser::Stats()
 
 AST::AST* Parser::Stat()
 {
-	if (auto echo = EchoStat()) return echo;
+	if (auto echo = Echo()) return echo;
 	if (auto ass = Assignment()) return ass;
 	if (auto val = Value()) return val;
+	if (auto funcdef = FuncDef()) return funcdef;
+	if (auto funcall = FunCall()) return funcall;
 	return nullptr;
 }
 
-AST::AST* Parser::EchoStat()
+AST::AST* Parser::Echo()
 {
 	AST::AST* val;
 	if (!Match('echo', '(')) return nullptr;
 	if (val = Value(); !val) return nullptr;
 	if (!Match(')')) return nullptr;
-	return AST::Create<AST::Stat<'echo'>>(val);
+	return AST::Create<AST::Echo>(val);
 }
 
 AST::AST* Parser::Expr()
@@ -199,6 +201,8 @@ AST::AST* Parser::ID()
 
 AST::AST* Parser::Value()
 {
+	if (auto funcall = FunCall()) return funcall;
+	//if (auto id = ID()) return id;
 	if (auto e = Expr()) return e;
 	if (auto str = STR()) return str;
 	return nullptr;
@@ -221,13 +225,13 @@ AST::AST* Parser::Args()
 	do {
 		auto value = Value();
 		if (!value) return nullptr;
-		auto temp = AST::Create<AST::Args>();
 		AST::L(arg) = value;
+		if (Match(')')) return head;
+		auto temp = AST::Create<AST::Args>();
 		AST::R(arg) = temp;
 		arg = temp;
 	} while (Match(','));
-	if (!Match(')')) return nullptr;
-	return head;
+	return nullptr;
 }
 
 AST::AST* Parser::Params()
@@ -239,13 +243,13 @@ AST::AST* Parser::Params()
 	do {
 		auto id = ID();
 		if (!id) return nullptr;
-		auto temp = AST::Create< AST::Params>();
 		AST::L(param) = id;
-		AST::L(param) = temp;
+		if (Match(')')) return head;
+		auto temp = AST::Create< AST::Params>();
+		AST::R(param) = temp;
 		param = temp;
 	} while (Match(','));
-	if (!Match(')')) return nullptr;
-	return head;
+	return nullptr;
 }
 
 AST::AST* Parser::FuncDef()
@@ -257,7 +261,7 @@ AST::AST* Parser::FuncDef()
 		{
 			if (auto block = Block())
 			{
-				auto funcdef = AST::Create<AST::FuncDef>(id, params, block);
+				return AST::Create<AST::FuncDef>(id, params, block);
 			}
 		}
 	}
@@ -267,6 +271,15 @@ AST::AST* Parser::FuncDef()
 
 AST::AST* Parser::FunCall()
 {
+	if (!Match('id', '('))return nullptr;
+	Seek(-2);
+	if (auto id = ID())
+	{
+		if (auto args = Args())
+		{
+			return AST::Create<AST::FunCall>(id, args);
+		}
+	}
 	return nullptr;
 }
 
@@ -299,7 +312,7 @@ void Parser::PrintAST(AST::AST* ast, int n)
 	}
 	else if (auto eors = dynamic_cast<AST::ASTypeToStr<>*>(ast))
 	{
-		std::cout << std::string_view(typeid(*ast).name() + 12, 1) << ":";
+		//std::cout << std::string_view(typeid(*ast).name() + 12, 3) << ":";
 		std::cout << "'" << eors->toString() << "'";
 	}
 	else

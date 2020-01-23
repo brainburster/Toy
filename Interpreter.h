@@ -42,7 +42,7 @@ public:
 private:
 	Env _env;
 	bool EvalStats(AST::AST* stats);
-	bool EvalEcho(AST::Stat<'echo'>* echo);
+	bool EvalEcho(AST::Echo* echo);
 	double EvalExpr(AST::Expr* expr);
 	const char* EvalStr(AST::StrValue* str);
 	template<typename T>

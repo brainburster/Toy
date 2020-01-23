@@ -45,7 +45,7 @@ bool Interpreter::Eval(AST::AST* ast)
 
 bool Interpreter::EvalStats(AST::AST* stat)
 {
-	if (auto echo = dynamic_cast<AST::Stat<'echo'>*>(stat))
+	if (auto echo = dynamic_cast<AST::Echo*>(stat))
 	{
 		return EvalEcho(echo);
 	}
@@ -84,7 +84,7 @@ bool Interpreter::EvalStats(AST::AST* stat)
 	return false;
 }
 
-bool Interpreter::EvalEcho(AST::Stat<'echo'>* echo)
+bool Interpreter::EvalEcho(AST::Echo* echo)
 {
 	auto childern = AST::L(echo);
 	if (auto id = dynamic_cast<AST::ID*>(childern))

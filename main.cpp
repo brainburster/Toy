@@ -8,27 +8,23 @@
 class Redirect
 {
 private:
-	std::ofstream* _file;
+	std::ofstream _file;
 	std::streambuf* _outbuf;
 public:
 	Redirect(const char* path) :
-		_file(nullptr),
+		_file(path),
 		_outbuf(nullptr)
 	{
-		_file = new std::ofstream(path);
-		_outbuf = std::cout.rdbuf(_file->rdbuf());
+		_outbuf = std::cout.rdbuf(_file.rdbuf());
 	}
 	~Redirect()
 	{
 		std::cout.rdbuf(_outbuf);
-		delete _file;
 	}
 };
 
 int main()
 {
-	std::cout << AST::Length<int, int, int>::value << std::endl;
-
 	Parser parser;
 	Interpreter interpreter;
 	AST::AST* ast;

@@ -20,7 +20,7 @@ private:
 	//½âÎöÏîÄ¿
 	AST::AST* Stats();
 	AST::AST* Stat();
-	AST::AST* EchoStat();
+	AST::AST* Echo();
 	AST::AST* Expr();
 	AST::AST* TermExpr();
 	AST::AST* FactorExpr();
