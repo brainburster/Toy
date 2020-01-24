@@ -82,7 +82,6 @@ namespace AST
 	struct FuncDef : Tree<3> {};
 	struct FunCall : Tree<2> {};
 	struct IF : Tree<3> {};
-	//struct Elif : Tree<3> {}; Elif和If在解析上完全没有区别，所以废弃掉
 	struct Else : Tree<1> {};
 
 	template<typename T, typename Enable = std::enable_if_t<1 <= std::extent_v<decltype(T::children)>>>
@@ -165,7 +164,7 @@ namespace AST
 		return Create<BinExpr<type>>(a, b);
 	};
 
-	//例如，使 '++'('+'<<8|'+') 转化 为 "++"
+	//把多字节字符整形字面量转换为字符串
 	inline std::string ASTypeToStr<>::toString()
 	{
 		int tempi = type();

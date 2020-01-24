@@ -23,26 +23,23 @@ public:
 	}
 };
 
-class A {
-public:
-	virtual ~A() {
-		std::cout << "A" << std::endl;
-	}
-};
-class B :public A {
-public:
-	~B() {
-		std::cout << "B" << std::endl;
-	}
-};
-int main()
+int main(int argc, char** argv)
 {
+	const char* path;
+	if (argc == 1)
+	{
+		path = "./test.txt";
+	}
+	else
+	{
+		path = argv[1];
+	}
 	Parser parser;
 	Interpreter interpreter;
 	AST::AST* ast;
 	{
 		Redirect rd("./token.txt");
-		ast = parser.Parse("./test.txt");
+		ast = parser.Parse(path);
 	}
 
 	{

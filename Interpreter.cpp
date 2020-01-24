@@ -38,10 +38,8 @@ bool Interpreter::Eval(AST::AST* ast)
 		}
 		if (!EvalStats(AST::L(stats)))
 		{
-			//_curEnv->clearStack();
 			return false;
 		}
-		//_curEnv->clearStack();//清空了栈就没有返回值了
 		stats = dynamic_cast<AST::Stats*>(AST::R(stats));
 	}
 	return true;
