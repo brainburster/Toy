@@ -38,6 +38,7 @@ private:
 	void push(int id, T value);
 	template<typename T>
 	void push(T value);
+	void clearStack();
 	int find(int id);
 	std::optional<Env::Value> pop();
 	std::optional<Env::Value> top();
@@ -51,10 +52,11 @@ class Interpreter
 {
 public:
 	bool Eval(AST::AST* ast);
-	Interpreter() : _global(new Env{}) {}
+	Interpreter() : _global(new Env{}), _curEnv(_global) {}
 	~Interpreter() { SafeDelete(_global); }
 private:
 	Env* _global;
+	Env* _curEnv;
 	bool EvalFuncDef(AST::FuncDef* funcdef);
 	bool EvalFunCall(AST::FunCall* funcall);
 	bool EvalStats(AST::AST* stats);
@@ -62,6 +64,7 @@ private:
 	bool EvalEcho(AST::Echo* echo);
 	bool EvalExpr(AST::Expr* expr);
 	const char* EvalStr(AST::StrValue* str);
+	std::optional<Env::Value> getVar(int id);
 	template<typename T>
 	void Print(T value);
 };
@@ -70,7 +73,7 @@ private:
 template<typename T>
 inline void  Env::_push(int id, T value)
 {
-	_variable[id] = { '?',value };
+	_variable[id] = { 'null',value };
 }
 template<>
 inline void  Env::_push(int id, Env::Value value)
@@ -96,7 +99,7 @@ inline void  Env::_push(int id, AST::AST* value)
 template<typename T>
 inline void Env::_push(T value)
 {
-	_variable.emplace_back('?', value);
+	_variable.emplace_back('null', value);
 }
 template<>
 inline void Env::_push(Env::Value value)
@@ -137,7 +140,7 @@ inline void Env::push(int id, T value)
 template<typename T>
 inline void Env::push(T value)
 {
-	_stack.emplace('?', value);
+	_stack.emplace('null', value);
 }
 template<>
 inline void Env::push(Env::Value value)

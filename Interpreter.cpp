@@ -13,17 +13,15 @@ inline void Interpreter::Print(T value)
 template<>
 inline void Interpreter::Print(AST::ID* id)
 {
-	auto value = _global->get(id->id);
-	if (value.has_value())
+	auto value = getVar(id->id);
+	if (!value.has_value()) return;
+	if (value->type == 'num')
 	{
-		if (value->type == 'num')
-		{
-			Print(value->value.dValue);
-		}
-		else if (value->type == 'str')
-		{
-			Print(StringTable::getInstance().GetStr(value->value.iValue));
-		}
+		Print(value->value.dValue);
+	}
+	else if (value->type == 'str')
+	{
+		Print(StringTable::getInstance().GetStr(value->value.iValue));
 	}
 }
 
@@ -36,8 +34,10 @@ bool Interpreter::Eval(AST::AST* ast)
 	{
 		if (!EvalStats(AST::L(stats)))
 		{
+			_curEnv->clearStack();
 			return false;
 		}
+		_curEnv->clearStack();
 		stats = dynamic_cast<AST::Stats*>(AST::R(stats));
 	}
 	return true;
@@ -47,7 +47,7 @@ bool Interpreter::EvalFuncDef(AST::FuncDef* funcdef)
 {
 	auto id = dynamic_cast<AST::ID*>(funcdef->children[0]);
 	if (!id) return false;
-	_global->push(id->id, funcdef);
+	_curEnv->push(id->id, funcdef);
 	return true;
 }
 
@@ -56,7 +56,7 @@ bool Interpreter::EvalFunCall(AST::FunCall* funcall)
 	auto id = dynamic_cast<AST::ID*>(funcall->children[0]);
 	auto args = dynamic_cast<AST::Args*>(funcall->children[1]);
 	if (!id || !args) return false;
-	auto temp = _global->get(id->id);
+	auto temp = getVar(id->id);
 	if (!temp.has_value()) return false;
 	auto funcdef = dynamic_cast<AST::FuncDef*>(temp->value.astValue);
 	if (!funcdef) return false;
@@ -73,8 +73,8 @@ bool Interpreter::EvalFunCall(AST::FunCall* funcall)
 		if (!params) break;
 	}
 	Env env{};
-	auto old = _global;
-	_global = &env; //暂时不支持递归，应该把函数与环境分离的
+	auto old = _curEnv;
+	_curEnv = &env;
 	//参数压栈
 	for (int param : paramlist)
 	{
@@ -83,10 +83,16 @@ bool Interpreter::EvalFunCall(AST::FunCall* funcall)
 		if (args = dynamic_cast<AST::Args*>(AST::R(args)); !args) break;
 	}
 	Eval(block);
-	auto result = _global->pop();
-	_global = old;
-	if (!result.has_value()) return false;
-	_global->push(result.value());
+	auto result = _curEnv->pop();
+	_curEnv = old;
+	if (result.has_value())
+	{
+		_curEnv->push(result.value());
+	}
+	else
+	{
+		_curEnv->push(Env::Value{ 'null',0 });
+	}
 	return true;
 }
 
@@ -112,11 +118,14 @@ bool Interpreter::EvalStats(AST::AST* stat)
 	if (auto funcdef = dynamic_cast<AST::FuncDef*>(stat)) {
 		return EvalFuncDef(funcdef);
 	}
+	if (auto funcall = dynamic_cast<AST::FunCall*>(stat)) {
+		return EvalFunCall(funcall);
+	}
 	//其他
 	if (auto e = dynamic_cast<AST::BinExpr<>*>(stat))
 	{
 		if (!EvalExpr(e)) return false;
-		Print(_global->top()->value.dValue);
+		Print(_curEnv->top()->value.dValue);
 		return true;
 	}
 	if (auto str = dynamic_cast<AST::StrValue*>(stat))
@@ -132,22 +141,22 @@ bool Interpreter::EvalAssignment(int id, AST::AST* value)
 {
 	if (auto str = dynamic_cast<AST::StrValue*>(value))
 	{
-		_global->push(id, str->id);
+		_curEnv->push(id, str->id);
 		return true;
 	}
 	if (auto expr = dynamic_cast<AST::BinExpr<>*>(value))
 	{
 		//计算表达式的值
 		if (!EvalExpr(expr)) return false;
-		_global->push(id, _global->pop()->value.dValue);
+		_curEnv->push(id, _curEnv->pop()->value.dValue);
 		return true;
 	}
 	if (auto funcall = dynamic_cast<AST::FunCall*>(value))
 	{
 		if (!EvalFunCall(funcall)) return false;
-		auto result = _global->pop();
+		auto result = _curEnv->pop();
 		if (!result.has_value()) return false;
-		_global->push(id, result.value());
+		_curEnv->push(id, result.value());
 		return true;
 	}
 	return false;
@@ -164,7 +173,7 @@ bool Interpreter::EvalEcho(AST::Echo* echo)
 	if (auto e = dynamic_cast<AST::BinExpr<>*>(childern))
 	{
 		if (!EvalExpr(e))return false;
-		Print(_global->pop()->value.dValue);
+		Print(_curEnv->pop()->value.dValue);
 		return true;
 	}
 	if (auto str = dynamic_cast<AST::StrValue*>(childern))
@@ -182,20 +191,20 @@ bool Interpreter::EvalExpr(AST::Expr* expr)
 {
 	if (auto d = dynamic_cast<AST::NumValue*>(expr))
 	{
-		_global->push(d->value);
+		_curEnv->push(d->value);
 		return true;
 	}
 	if (auto id = dynamic_cast<AST::ID*>(expr))
 	{
-		auto value = _global->get(id->id);
+		auto value = getVar(id->id);
 		if (!value.has_value()) return false;
 		if (value->type != 'num')
 		{
 			double v = atof(StringTable::getInstance().GetStr(value->value.iValue));
-			_global->push(v);
+			_curEnv->push(v);
 			return true;
 		}
-		_global->push(value->value.dValue);
+		_curEnv->push(value->value.dValue);
 		return true;
 	}
 	AST::Tree<2>* node;
@@ -212,27 +221,27 @@ bool Interpreter::EvalExpr(AST::Expr* expr)
 
 	if (typeid(AST::BinExpr<'+'>) == typeid(*expr))
 	{
-		_global->push(_global->pop()->value.dValue + _global->pop()->value.dValue);
+		_curEnv->push(_curEnv->pop()->value.dValue + _curEnv->pop()->value.dValue);
 		return true;
 	}
 	if (typeid(AST::BinExpr<'-'>) == typeid(*expr))
 	{
-		_global->push(_global->pop()->value.dValue - _global->pop()->value.dValue);
+		_curEnv->push(_curEnv->pop()->value.dValue - _curEnv->pop()->value.dValue);
 		return true;
 	}
 	if (typeid(AST::BinExpr<'*'>) == typeid(*expr))
 	{
-		_global->push(_global->pop()->value.dValue * _global->pop()->value.dValue);
+		_curEnv->push(_curEnv->pop()->value.dValue * _curEnv->pop()->value.dValue);
 		return true;
 	}
 	if (typeid(AST::BinExpr<'/'>) == typeid(*expr))
 	{
-		_global->push(_global->pop()->value.dValue / _global->pop()->value.dValue);
+		_curEnv->push(_curEnv->pop()->value.dValue / _curEnv->pop()->value.dValue);
 		return true;
 	}
 	if (typeid(AST::BinExpr<'**'>) == typeid(*expr))
 	{
-		_global->push(pow(_global->pop()->value.dValue, _global->pop()->value.dValue));
+		_curEnv->push(pow(_curEnv->pop()->value.dValue, _curEnv->pop()->value.dValue));
 		return true;
 	}
 	return false;
@@ -241,6 +250,23 @@ bool Interpreter::EvalExpr(AST::Expr* expr)
 inline const char* Interpreter::EvalStr(AST::StrValue* str)
 {
 	return 	StringTable::getInstance().GetStr(str->id);
+}
+
+std::optional<Env::Value> Interpreter::getVar(int id)
+{
+	auto temp = _curEnv->get(id);
+	if (!temp.has_value())temp = _global->get(id);
+	return temp;
+}
+
+void Env::clearStack()
+{
+	//std::stack<Env::Value> newStack{};
+	//_stack.swap(newStack);
+	while (!_stack.empty())
+	{
+		_stack.pop();
+	}
 }
 
 inline int Env::find(int id)
