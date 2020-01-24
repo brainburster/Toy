@@ -23,12 +23,23 @@ public:
 	}
 };
 
+class A {
+public:
+	virtual ~A() {
+		std::cout << "A" << std::endl;
+	}
+};
+class B :public A {
+public:
+	~B() {
+		std::cout << "B" << std::endl;
+	}
+};
 int main()
 {
 	Parser parser;
 	Interpreter interpreter;
 	AST::AST* ast;
-
 	{
 		Redirect rd("./token.txt");
 		ast = parser.Parse("./test.txt");

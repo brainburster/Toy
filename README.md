@@ -23,7 +23,7 @@
 - [x] E : T "+" E | T "-" E | T
 - [x] T : F "*" T | F "/" T | F
 - [x] F : "-" P | P "**" P | P
-- [x] P : NUM | ID | "(" E ")"
+- [x] P : NUM | ID | "(" BE ")"
 
 ### 块
 
@@ -44,10 +44,10 @@
 
 ### 循环分支结构
 
-- [ ] If : "if" "(" BE ")" Block ElseIfList
-- [ ] ElseIfList ：$ | Else | ElseIf ElseIfList
-- [ ] ElseIf : "elif" "(" BE ")"  Block
-- [ ] Else : "else" Block
+- [x] If : "if" "(" BE ")" Block [ ElseIfList ]
+- [x] ElseIfList ：Else | ElseIf ElseIfList
+- [x] ElseIf : "elif" "(" BE ")"  Block [ ElseIfList ] 
+- [x] Else : "else" Block
 - [ ] Lable : ID ":"
 - [ ] Goto : "goto" : ID
 

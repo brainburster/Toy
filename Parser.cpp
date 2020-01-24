@@ -169,7 +169,7 @@ AST::AST* Parser::PrimExpr()
 	if (auto id = ID()) return id;
 	if (auto num = Num()) return num;
 	if (!Match('(')) return nullptr;
-	if (e = Expr(); !e) return  nullptr;
+	if (e = BoolExpr(); !e) return  nullptr;
 	if (!Match(')')) { SafeDelete(e); return nullptr; }
 	return e;
 }
@@ -363,8 +363,35 @@ AST::AST* Parser::If()
 	auto block = Block();
 	if (!block) { SafeDelete(condition); return nullptr; }
 	//...
-	auto elseIfList = nullptr;//todo:完成elseIfList
+	auto elseIfList = ElseIfList();
 	return AST::Create<AST::IF>(condition, block, elseIfList);
+}
+
+AST::AST* Parser::ElseIfList()
+{
+	if (Match('else'))
+	{
+		if (auto block = Block())
+		{
+			return AST::Create<AST::Else>(block);
+		}
+	}
+	else if (Match('elif', '('))
+	{
+		if (auto be = BoolExpr())
+		{
+			if (Match(')'))
+			{
+				if (auto block = Block())
+				{
+					auto eliflist = ElseIfList();
+					return AST::Create<AST::IF>(be, block, eliflist); /*AST::Elif*/
+				}
+			}
+			SafeDelete(be);
+		}
+	}
+	return nullptr;
 }
 
 //打印抽象语法树

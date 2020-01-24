@@ -18,7 +18,7 @@ public:
 			int iValue;
 			bool bValue;
 			AST::AST* astValue;
-			//Type() :astValue(nullptr) {};
+			Type() :astValue(nullptr) {};
 			Type(int i) :iValue(i) {}
 			Type(bool b) :bValue(b) {}
 			Type(double d) :dValue(d) {}
@@ -62,6 +62,7 @@ private:
 	bool EvalFuncDef(AST::FuncDef* funcdef);
 	bool EvalFunCall(AST::FunCall* funcall);
 	bool EvalIf(AST::IF* ifstat);
+	bool EvalElseIfList(AST::AST* elseIfList);
 	bool EvalStats(AST::AST* stats);
 	bool EvalAssignment(int id, AST::AST* value);
 	bool EvalEcho(AST::Echo* echo);

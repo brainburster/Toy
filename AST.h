@@ -10,8 +10,8 @@
 
 //#define L children[0]
 //#define R children[1]
-
-inline bool SafeDelete(void* p)
+template<typename T>
+inline bool SafeDelete(T* p)
 {
 	if (!p) return false;
 	delete p;
@@ -81,6 +81,8 @@ namespace AST
 	struct FuncDef : Tree<3> {};
 	struct FunCall : Tree<2> {};
 	struct IF : Tree<3> {};
+	//struct Elif : Tree<3> {}; Elif和If在解析上完全没有区别，所以废弃掉
+	struct Else : Tree<1> {};
 
 	template<typename T, typename Enable = std::enable_if_t<1 <= std::extent_v<decltype(T::children)>>>
 	AST*& L(T* t)

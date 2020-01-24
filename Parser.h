@@ -40,8 +40,6 @@ private:
 	AST::AST* BoolPrim();
 	AST::AST* If();
 	AST::AST* ElseIfList();
-	AST::AST* ElseIf();
-	AST::AST* Else();
 
 	//∆•≈‰token
 	template<typename... Args>

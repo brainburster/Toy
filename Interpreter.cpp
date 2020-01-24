@@ -34,10 +34,10 @@ bool Interpreter::Eval(AST::AST* ast)
 	{
 		if (!EvalStats(AST::L(stats)))
 		{
-			_curEnv->clearStack();
+			//_curEnv->clearStack();
 			return false;
 		}
-		_curEnv->clearStack();
+		//_curEnv->clearStack();//清空了栈就没有返回值了
 		stats = dynamic_cast<AST::Stats*>(AST::R(stats));
 	}
 	return true;
@@ -46,7 +46,7 @@ bool Interpreter::Eval(AST::AST* ast)
 bool Interpreter::EvalFuncDef(AST::FuncDef* funcdef)
 {
 	auto id = dynamic_cast<AST::ID*>(funcdef->children[0]);
-	if (!id) return false;
+	if (!id) { return false; }
 	_curEnv->push(id->id, funcdef);
 	return true;
 }
@@ -55,14 +55,14 @@ bool Interpreter::EvalFunCall(AST::FunCall* funcall)
 {
 	auto id = dynamic_cast<AST::ID*>(funcall->children[0]);
 	auto args = dynamic_cast<AST::Args*>(funcall->children[1]);
-	if (!id || !args) return false;
+	if (!id || !args) { return false; }
 	auto temp = getVar(id->id);
-	if (!temp.has_value()) return false;
+	if (!temp.has_value()) { return false; }
 	auto funcdef = dynamic_cast<AST::FuncDef*>(temp->value.astValue);
-	if (!funcdef) return false;
+	if (!funcdef) { return false; }
 	auto params = dynamic_cast<AST::Params*>(funcdef->children[1]);
 	auto block = dynamic_cast<AST::Stats*>(funcdef->children[2]);
-	if (!params || !block) return false;
+	if (!params || !block) { return false; }
 	std::list<int> paramlist;
 	for (;;)
 	{
@@ -99,13 +99,28 @@ bool Interpreter::EvalFunCall(AST::FunCall* funcall)
 bool Interpreter::EvalIf(AST::IF* ifstat)
 {
 	auto condition = dynamic_cast<AST::Expr*>(ifstat->children[0]);
+	if (!condition) { {return false; } }
 	auto block = ifstat->children[1];
-	//auto elseIfList = ifstat->children[2];
+	auto elseIfList = ifstat->children[2];
 	EvalExpr(condition);
 	bool con = false;
 	if (auto temp = _curEnv->pop(); temp.has_value())
 	{
-		con = temp->value.iValue;
+		switch (temp->type)
+		{
+		case 'num':
+			con = temp->value.dValue;
+			break;
+		case 'bool':
+			con = temp->value.bValue;
+			break;
+		case 'str':
+			con = true;
+		case 'null':
+			con = false;
+		default:
+			break;
+		}
 	}
 
 	if (con)
@@ -113,7 +128,26 @@ bool Interpreter::EvalIf(AST::IF* ifstat)
 		Eval(block);
 		return true;
 	}
-	//...
+	if (elseIfList)
+	{
+		return EvalElseIfList(elseIfList);
+	}
+
+	return false;
+}
+
+bool Interpreter::EvalElseIfList(AST::AST* elseIfList)
+{
+	if (auto _else = dynamic_cast<AST::Else*>(elseIfList))
+	{
+		Eval(_else->children[0]);
+		return true;
+	}
+	if (auto elif = dynamic_cast<AST::IF*>(elseIfList))
+	{
+		EvalIf(elif);
+		return true;
+	}
 	return false;
 }
 
@@ -150,7 +184,7 @@ bool Interpreter::EvalStats(AST::AST* stat)
 	//其他
 	if (auto e = dynamic_cast<AST::BinExpr<>*>(stat))
 	{
-		if (!EvalExpr(e)) return false;
+		if (!EvalExpr(e)) { return false; }
 		Print(_curEnv->top()->value.dValue);
 		return true;
 	}
@@ -173,15 +207,17 @@ bool Interpreter::EvalAssignment(int id, AST::AST* value)
 	if (auto expr = dynamic_cast<AST::BinExpr<>*>(value))
 	{
 		//计算表达式的值
-		if (!EvalExpr(expr)) return false;
-		_curEnv->push(id, _curEnv->pop()->value.dValue);
+		if (!EvalExpr(expr)) { return false; }
+		auto result = _curEnv->pop();
+		if (!result.has_value()) { return false; }
+		_curEnv->push(id, result.value());
 		return true;
 	}
 	if (auto funcall = dynamic_cast<AST::FunCall*>(value))
 	{
-		if (!EvalFunCall(funcall)) return false;
+		if (!EvalFunCall(funcall)) { return false; }
 		auto result = _curEnv->pop();
-		if (!result.has_value()) return false;
+		if (!result.has_value()) { return false; }
 		_curEnv->push(id, result.value());
 		return true;
 	}
@@ -198,7 +234,7 @@ bool Interpreter::EvalEcho(AST::Echo* echo)
 	}
 	if (auto e = dynamic_cast<AST::BinExpr<>*>(childern))
 	{
-		if (!EvalExpr(e))return false;
+		if (!EvalExpr(e)) { return false; }
 		Print(_curEnv->pop()->value.dValue);
 		return true;
 	}
@@ -223,26 +259,34 @@ bool Interpreter::EvalExpr(AST::Expr* expr)
 	if (auto id = dynamic_cast<AST::ID*>(expr))
 	{
 		auto value = getVar(id->id);
-		if (!value.has_value()) return false;
-		if (value->type != 'num')
+		if (!value.has_value()) { return false; }
+		switch (value->type)
 		{
-			double v = atof(StringTable::getInstance().GetStr(value->value.iValue));
-			_curEnv->push(v);
-			return true;
+		case 'num':
+			_curEnv->push(value->value.dValue);
+			break;
+		case 'str':
+			_curEnv->push(atof(StringTable::getInstance().GetStr(value->value.iValue)));
+			break;
+		case 'bool':
+			_curEnv->push((double)value->value.bValue);
+			break;
+		default:
+			_curEnv->push(0);
+			break;
 		}
-		_curEnv->push(value->value.dValue);
 		return true;
 	}
 	AST::Tree<2>* node;
-	if (node = dynamic_cast<AST::Tree<2>*>(expr); !node) return  false;
+	if (node = dynamic_cast<AST::Tree<2>*>(expr); !node) { return false; }
 
 	if (auto c1 = dynamic_cast<AST::BinExpr<>*>(AST::L(node)))
 	{
-		if (!EvalExpr(c1)) return false;
+		if (!EvalExpr(c1)) { return false; }
 	}
 	if (auto c2 = dynamic_cast<AST::BinExpr<>*>(AST::R(node)))
 	{
-		if (!EvalExpr(c2)) return false;
+		if (!EvalExpr(c2)) { return false; }
 	}
 
 	if (typeid(AST::BinExpr<'&&'>) == typeid(*expr))
@@ -347,7 +391,6 @@ inline int Env::find(int id)
 	{
 		return iter->second;
 	}
-
 	return -1;
 }
 

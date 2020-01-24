@@ -218,6 +218,14 @@ int Scanner::GetKeyWord(const std::string& str)
 	{
 		return 'if'; //26982
 	}
+	if (str.compare("true") == 0)
+	{
+		return 'true';
+	}
+	if (str.compare("false") == 0)
+	{
+		return 'fals';
+	}
 	if (str.compare("elif") == 0)
 	{
 		return 'elif';
@@ -237,6 +245,10 @@ int Scanner::GetKeyWord(const std::string& str)
 	if (str.compare("class") == 0)
 	{
 		return 'cls';
+	}
+	if (str.compare("goto") == 0)
+	{
+		return 'goto';
 	}
 	return 0;
 }
