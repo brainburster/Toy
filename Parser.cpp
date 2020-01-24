@@ -182,13 +182,16 @@ AST::AST* Parser::STR()
 
 AST::AST* Parser::Assignment()
 {
-	if (!Match('id', '=')) return nullptr;
+	if (!Match('id', '=') && !Match('id', ':=') && !Match('id', ':')) return nullptr;
 	Seek(-2);
 	auto id = ID();
-	Match('=');
-	auto val = Value();
-	if (!val) { SafeDelete(id); return nullptr; }
-	return AST::CreateBinExpr<'='>(id, val);
+	if (Match('=') || Match(':='))
+	{
+		auto val = Value();
+		if (!val) { SafeDelete(id); return nullptr; }
+		return AST::CreateBinExpr<'='>(id, val);
+	}
+	return nullptr;
 }
 
 AST::AST* Parser::Num()
@@ -206,7 +209,7 @@ AST::AST* Parser::ID()
 AST::AST* Parser::BOOL()
 {
 	if (!Match('bool')) return nullptr;
-	return AST::Create<AST::NumValue>(Peek(-1).value.iValue);
+	return AST::Create<AST::BoolValue>(Peek(-1).value.iValue);
 }
 
 AST::AST* Parser::Value()

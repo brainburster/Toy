@@ -72,6 +72,7 @@ namespace AST
 	//值
 	struct NumValue : Tree<0>, Expr { double value = 0; };
 	struct StrValue : Tree<0> { int id = 0; };
+	struct BoolValue : Tree<0>, Expr { bool value = false; };
 	//实参，形参列表
 	struct Args : Tree<2> {};
 	struct Params : Tree<2> {};
@@ -126,16 +127,16 @@ namespace AST
 		return tree;
 	}
 
-	template<typename T, typename Enable = decltype(T::id)>
-	inline auto Create(int id)
+	template<typename T>
+	inline auto Create(decltype(T::id) id)
 	{
 		auto leaf = new T{};
 		leaf->id = id;
 		return leaf;
 	}
 
-	template<typename T, typename Enable = decltype(T::value)>
-	inline auto Create(double num)
+	template<typename T>
+	inline auto Create(decltype(T::value) num)
 	{
 		auto leaf = new T{};
 		leaf->value = num;

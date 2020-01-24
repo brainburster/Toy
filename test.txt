@@ -26,7 +26,7 @@ func add(a,b){
 sum = add(1,2)
 echo(sum**sum)
 
-if(false)
+if(!true)
 {
 	echo("false")
 }
@@ -35,7 +35,7 @@ else
 	echo(a)
 }
 
-if(1+1==2)
+if((1+1==2)&&!false)
 {
 	echo("1+1=2")
 }

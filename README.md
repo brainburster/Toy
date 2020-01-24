@@ -15,7 +15,7 @@
 
 - [x] SS : {S}
 - [x] S : ECHO "(" BE ")" | ASS | BE | FuncDef | Funcall | If
-- [x] ASS : ID | ID "=" VAL
+- [x] ASS : ID "=" VAL
 - [x] VAL : STR | E | BOOL | Funcall
 
 ### 计算表达式
@@ -48,8 +48,6 @@
 - [x] ElseIfList ：Else | ElseIf ElseIfList
 - [x] ElseIf : "elif" "(" BE ")"  Block [ ElseIfList ] 
 - [x] Else : "else" Block
-- [ ] Lable : ID ":"
-- [ ] Goto : "goto" : ID
 
 ### 函数
 

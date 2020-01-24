@@ -32,6 +32,10 @@ bool Interpreter::Eval(AST::AST* ast)
 	auto stats = dynamic_cast<AST::Stats*>(ast);
 	while (nullptr != stats)
 	{
+		if (auto echo = dynamic_cast<AST::ACC*>(AST::L(stats)))
+		{
+			return true;
+		}
 		if (!EvalStats(AST::L(stats)))
 		{
 			//_curEnv->clearStack();
@@ -99,27 +103,27 @@ bool Interpreter::EvalFunCall(AST::FunCall* funcall)
 bool Interpreter::EvalIf(AST::IF* ifstat)
 {
 	auto condition = dynamic_cast<AST::Expr*>(ifstat->children[0]);
-	if (!condition) { {return false; } }
 	auto block = ifstat->children[1];
 	auto elseIfList = ifstat->children[2];
-	EvalExpr(condition);
 	bool con = false;
-	if (auto temp = _curEnv->pop(); temp.has_value())
+	if (EvalExpr(condition))
 	{
-		switch (temp->type)
+		if (auto temp = _curEnv->pop(); temp.has_value())
 		{
-		case 'num':
-			con = temp->value.dValue;
-			break;
-		case 'bool':
-			con = temp->value.bValue;
-			break;
-		case 'str':
-			con = true;
-		case 'null':
-			con = false;
-		default:
-			break;
+			switch (temp->type)
+			{
+			case 'num':
+				con = temp->value.dValue;
+				break;
+			case 'bool':
+				con = temp->value.bValue;
+				break;
+			case 'str':
+				con = true;
+			case 'null':
+				con = false;
+				break;
+			}
 		}
 	}
 
@@ -255,6 +259,11 @@ bool Interpreter::EvalExpr(AST::Expr* expr)
 		_curEnv->push(d->value);
 		return true;
 	}
+	if (auto d = dynamic_cast<AST::BoolValue*>(expr))
+	{
+		_curEnv->push(d->value);
+		return true;
+	}
 	if (auto id = dynamic_cast<AST::ID*>(expr))
 	{
 		auto value = getVar(id->id);
@@ -300,8 +309,23 @@ bool Interpreter::EvalExpr(AST::Expr* expr)
 	}
 	if (typeid(AST::BinExpr<'!'>) == typeid(*expr))
 	{
-		_curEnv->pop();
-		_curEnv->push(!_curEnv->pop()->value.bValue);
+		auto value = _curEnv->pop();
+		if (!value.has_value()) { return false; }
+		switch (value->type)
+		{
+		case 'num':
+			_curEnv->push(!value->value.dValue);
+			break;
+		case 'bool':
+			_curEnv->push(!value->value.bValue);
+			break;
+		case 'str':
+			_curEnv->push(false);
+			break;
+		default:
+			_curEnv->push(true);
+			break;
+		}
 		return true;
 	}
 	if (typeid(AST::BinExpr<'=='>) == typeid(*expr))
