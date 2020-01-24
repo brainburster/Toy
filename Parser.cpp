@@ -203,10 +203,16 @@ AST::AST* Parser::ID()
 	return AST::Create<AST::ID>(Peek(-1).value.iValue);
 }
 
+AST::AST* Parser::BOOL()
+{
+	if (!Match('bool')) return nullptr;
+	return AST::Create<AST::NumValue>(Peek(-1).value.iValue);
+}
+
 AST::AST* Parser::Value()
 {
 	if (auto funcall = FunCall()) return funcall;
-	//if (auto id = ID()) return id;
+	if (auto b = BOOL()) return b;
 	if (auto e = Expr()) return e;
 	if (auto str = STR()) return str;
 	return nullptr;

@@ -28,6 +28,7 @@ private:
 	AST::AST* Num();
 	AST::AST* STR();
 	AST::AST* ID();
+	AST::AST* BOOL();
 	AST::AST* Value();
 	AST::AST* Block();
 	AST::AST* Args();

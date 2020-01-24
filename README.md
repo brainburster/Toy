@@ -16,7 +16,7 @@
 - [x] SS : {S}
 - [x] S : ECHO "(" BE ")" | ASS | BE | FuncDef | Funcall | If
 - [x] ASS : ID | ID "=" VAL
-- [x] VAL : STR | E | Funcall
+- [x] VAL : STR | E | BOOL | Funcall
 
 ### 计算表达式
 

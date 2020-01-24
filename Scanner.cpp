@@ -42,6 +42,14 @@ Token::Token Scanner::GetToken()
 	{
 		std::string str = GetIdentifierOrKeyword();
 		int keyword = GetKeyWord(str);
+		if (keyword == 'true')
+		{
+			return { 'bool',1 };
+		}
+		if (keyword == 'fals')
+		{
+			return { 'bool',0 };
+		}
 		if (keyword)
 		{
 			return { keyword,0 };

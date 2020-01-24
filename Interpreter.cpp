@@ -125,30 +125,29 @@ bool Interpreter::EvalIf(AST::IF* ifstat)
 
 	if (con)
 	{
-		Eval(block);
-		return true;
+		return Eval(block);
 	}
 	if (elseIfList)
 	{
-		return EvalElseIfList(elseIfList);
+		EvalElseIfList(elseIfList);
+		return true;
 	}
 
-	return false;
+	return true;
 }
 
 bool Interpreter::EvalElseIfList(AST::AST* elseIfList)
 {
 	if (auto _else = dynamic_cast<AST::Else*>(elseIfList))
 	{
-		Eval(_else->children[0]);
-		return true;
+		return Eval(_else->children[0]);
 	}
 	if (auto elif = dynamic_cast<AST::IF*>(elseIfList))
 	{
 		EvalIf(elif);
 		return true;
 	}
-	return false;
+	return true;
 }
 
 bool Interpreter::EvalStats(AST::AST* stat)
