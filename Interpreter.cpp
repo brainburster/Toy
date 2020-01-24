@@ -96,6 +96,27 @@ bool Interpreter::EvalFunCall(AST::FunCall* funcall)
 	return true;
 }
 
+bool Interpreter::EvalIf(AST::IF* ifstat)
+{
+	auto condition = dynamic_cast<AST::Expr*>(ifstat->children[0]);
+	auto block = ifstat->children[1];
+	//auto elseIfList = ifstat->children[2];
+	EvalExpr(condition);
+	bool con = false;
+	if (auto temp = _curEnv->pop(); temp.has_value())
+	{
+		con = temp->value.iValue;
+	}
+
+	if (con)
+	{
+		Eval(block);
+		return true;
+	}
+	//...
+	return false;
+}
+
 bool Interpreter::EvalStats(AST::AST* stat)
 {
 	if (auto echo = dynamic_cast<AST::Echo*>(stat))
@@ -118,8 +139,13 @@ bool Interpreter::EvalStats(AST::AST* stat)
 	if (auto funcdef = dynamic_cast<AST::FuncDef*>(stat)) {
 		return EvalFuncDef(funcdef);
 	}
-	if (auto funcall = dynamic_cast<AST::FunCall*>(stat)) {
+	if (auto funcall = dynamic_cast<AST::FunCall*>(stat))
+	{
 		return EvalFunCall(funcall);
+	}
+	if (auto ifstat = dynamic_cast<AST::IF*>(stat))
+	{
+		return EvalIf(ifstat);
 	}
 	//ÆäËû
 	if (auto e = dynamic_cast<AST::BinExpr<>*>(stat))
@@ -219,6 +245,52 @@ bool Interpreter::EvalExpr(AST::Expr* expr)
 		if (!EvalExpr(c2)) return false;
 	}
 
+	if (typeid(AST::BinExpr<'&&'>) == typeid(*expr))
+	{
+		_curEnv->push(_curEnv->pop()->value.bValue && _curEnv->pop()->value.bValue);
+		return true;
+	}
+	if (typeid(AST::BinExpr<'||'>) == typeid(*expr))
+	{
+		_curEnv->push(_curEnv->pop()->value.bValue || _curEnv->pop()->value.bValue);
+		return true;
+	}
+	if (typeid(AST::BinExpr<'!'>) == typeid(*expr))
+	{
+		_curEnv->pop();
+		_curEnv->push(!_curEnv->pop()->value.bValue);
+		return true;
+	}
+	if (typeid(AST::BinExpr<'=='>) == typeid(*expr))
+	{
+		_curEnv->push(_curEnv->pop()->value.dValue == _curEnv->pop()->value.dValue);
+		return true;
+	}
+	if (typeid(AST::BinExpr<'>='>) == typeid(*expr))
+	{
+		_curEnv->push(_curEnv->pop()->value.dValue >= _curEnv->pop()->value.dValue);
+		return true;
+	}
+	if (typeid(AST::BinExpr<'<='>) == typeid(*expr))
+	{
+		_curEnv->push(_curEnv->pop()->value.dValue <= _curEnv->pop()->value.dValue);
+		return true;
+	}
+	if (typeid(AST::BinExpr<'!='>) == typeid(*expr))
+	{
+		_curEnv->push(_curEnv->pop()->value.dValue != _curEnv->pop()->value.dValue);
+		return true;
+	}
+	if (typeid(AST::BinExpr<'>'>) == typeid(*expr))
+	{
+		_curEnv->push(_curEnv->pop()->value.dValue > _curEnv->pop()->value.dValue);
+		return true;
+	}
+	if (typeid(AST::BinExpr<'<'>) == typeid(*expr))
+	{
+		_curEnv->push(_curEnv->pop()->value.dValue < _curEnv->pop()->value.dValue);
+		return true;
+	}
 	if (typeid(AST::BinExpr<'+'>) == typeid(*expr))
 	{
 		_curEnv->push(_curEnv->pop()->value.dValue + _curEnv->pop()->value.dValue);

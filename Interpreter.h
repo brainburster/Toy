@@ -16,9 +16,11 @@ public:
 		{
 			double dValue;
 			int iValue;
+			bool bValue;
 			AST::AST* astValue;
 			//Type() :astValue(nullptr) {};
 			Type(int i) :iValue(i) {}
+			Type(bool b) :bValue(b) {}
 			Type(double d) :dValue(d) {}
 			Type(AST::AST* p) :astValue(p) {}
 		} value;
@@ -59,6 +61,7 @@ private:
 	Env* _curEnv;
 	bool EvalFuncDef(AST::FuncDef* funcdef);
 	bool EvalFunCall(AST::FunCall* funcall);
+	bool EvalIf(AST::IF* ifstat);
 	bool EvalStats(AST::AST* stats);
 	bool EvalAssignment(int id, AST::AST* value);
 	bool EvalEcho(AST::Echo* echo);
@@ -91,6 +94,11 @@ inline void  Env::_push(int id, double value)
 	_variable[id] = { 'num',value };
 }
 template<>
+inline void  Env::_push(int id, bool value)
+{
+	_variable[id] = { 'bool',value };
+}
+template<>
 inline void  Env::_push(int id, AST::AST* value)
 {
 	_variable[id] = { 'ast',value };
@@ -115,6 +123,11 @@ template<>
 inline void  Env::_push(double value)
 {
 	_variable.emplace_back('num', value);
+}
+template<>
+inline void  Env::_push(bool value)
+{
+	_variable.emplace_back('bool', value);
 }
 template<>
 inline void  Env::_push(AST::AST* value)
@@ -156,6 +169,11 @@ template<>
 inline void Env::push(int value)
 {
 	_stack.emplace('str', value);
+}
+template<>
+inline void Env::push(bool value)
+{
+	_stack.emplace('bool', value);
 }
 template<>
 inline void Env::push(AST::AST* value)

@@ -38,7 +38,6 @@ int main()
 		Redirect rd("./ast.txt");
 		Parser::PrintAST(ast);
 	}
-
 	interpreter.Eval(ast);
 	delete ast;
 }

@@ -94,6 +94,7 @@ AST::AST* Parser::Stat()
 	//if (auto val = Value()) return val;
 	if (auto funcdef = FuncDef()) return funcdef;
 	if (auto funcall = FunCall()) return funcall;
+	if (auto ifstat = If()) return ifstat;
 	return nullptr;
 }
 
@@ -102,7 +103,7 @@ AST::AST* Parser::Echo()
 	AST::AST* val;
 	if (!Match('echo', '(')) return nullptr;
 	if (val = BoolExpr(); !val) return nullptr;
-	if (!Match(')')) return nullptr;
+	if (!Match(')')) { SafeDelete(val); return nullptr; }
 	return AST::Create<AST::Echo>(val);
 }
 
@@ -169,7 +170,7 @@ AST::AST* Parser::PrimExpr()
 	if (auto num = Num()) return num;
 	if (!Match('(')) return nullptr;
 	if (e = Expr(); !e) return  nullptr;
-	if (!Match(')')) return nullptr;
+	if (!Match(')')) { SafeDelete(e); return nullptr; }
 	return e;
 }
 
@@ -186,6 +187,7 @@ AST::AST* Parser::Assignment()
 	auto id = ID();
 	Match('=');
 	auto val = Value();
+	if (!val) { SafeDelete(id); return nullptr; }
 	return AST::CreateBinExpr<'='>(id, val);
 }
 
@@ -228,11 +230,12 @@ AST::AST* Parser::Args()
 		auto value = Value();
 		if (!value) return nullptr;
 		AST::L(arg) = value;
-		if (Match(')')) return head;
+		if (Match(')')) { return head; }
 		auto temp = AST::Create<AST::Args>();
 		AST::R(arg) = temp;
 		arg = temp;
 	} while (Match(','));
+	SafeDelete(head);
 	return nullptr;
 }
 
@@ -247,10 +250,11 @@ AST::AST* Parser::Params()
 		if (!id) return nullptr;
 		AST::L(param) = id;
 		if (Match(')')) return head;
-		auto temp = AST::Create< AST::Params>();
+		auto temp = AST::Create<AST::Params>();
 		AST::R(param) = temp;
 		param = temp;
 	} while (Match(','));
+	SafeDelete(head);
 	return nullptr;
 }
 
@@ -265,7 +269,9 @@ AST::AST* Parser::FuncDef()
 			{
 				return AST::Create<AST::FuncDef>(id, params, block);
 			}
+			SafeDelete(params);
 		}
+		SafeDelete(id);
 	}
 
 	return nullptr;
@@ -281,6 +287,7 @@ AST::AST* Parser::FunCall()
 		{
 			return AST::Create<AST::FunCall>(id, args);
 		}
+		SafeDelete(id);
 	}
 	return nullptr;
 }
@@ -288,10 +295,10 @@ AST::AST* Parser::FunCall()
 AST::AST* Parser::BoolExpr()
 {
 	auto bt = BoolTerm();
-	if (!bt) return nullptr;
+	if (!bt) { return nullptr; }
 	if (!Match('&&')) return bt;
 	auto be = BoolExpr();
-	if (!be) return nullptr;
+	if (!be) { SafeDelete(bt); return nullptr; }
 	return AST::CreateBinExpr<'&&'>(bt, be);
 }
 
@@ -301,7 +308,7 @@ AST::AST* Parser::BoolTerm()
 	if (!bf) return nullptr;
 	if (!Match('||')) return bf;
 	auto bt = BoolTerm();
-	if (!bt) return nullptr;
+	if (!bt) { SafeDelete(bf); return nullptr; }
 	return AST::CreateBinExpr<'||'>(bf, bt);
 }
 
@@ -322,11 +329,11 @@ AST::AST* Parser::BoolPrim()
 {
 	auto val1 = Value();
 	if (!val1) return nullptr;
-	if (Match('==') || Match('>') || Match('>=') || Match('<=') || Match('!='))
+	if (Match('==') || Match('>') || Match('>=') || Match('<=') || Match('!=') || Match('<') || Match('>'))
 	{
 		auto token = Peek(-1);
 		auto val2 = Value();
-		if (!val2) return nullptr;
+		if (!val2) { SafeDelete(val1); return nullptr; }
 		switch (token.type)
 		{
 		case '==':
@@ -346,6 +353,18 @@ AST::AST* Parser::BoolPrim()
 		}
 	}
 	return val1;
+}
+
+AST::AST* Parser::If()
+{
+	if (!Match('if', '(')) return nullptr;
+	auto condition = BoolExpr();
+	if (!Match(')')) { SafeDelete(condition); return nullptr; }
+	auto block = Block();
+	if (!block) { SafeDelete(condition); return nullptr; }
+	//...
+	auto elseIfList = nullptr;//todo:完成elseIfList
+	return AST::Create<AST::IF>(condition, block, elseIfList);
 }
 
 //打印抽象语法树

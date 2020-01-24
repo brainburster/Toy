@@ -189,6 +189,7 @@ int Scanner::GetOperator()
 		case '--':
 		case '**':
 		case '==':
+		case '!=':
 		case '<=':
 		case '>=':
 		case '+=':
