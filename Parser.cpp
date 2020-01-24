@@ -90,7 +90,8 @@ AST::AST* Parser::Stat()
 {
 	if (auto echo = Echo()) return echo;
 	if (auto ass = Assignment()) return ass;
-	if (auto val = Value()) return val;
+	if (auto be = BoolExpr()) return be;
+	//if (auto val = Value()) return val;
 	if (auto funcdef = FuncDef()) return funcdef;
 	if (auto funcall = FunCall()) return funcall;
 	return nullptr;
@@ -100,7 +101,7 @@ AST::AST* Parser::Echo()
 {
 	AST::AST* val;
 	if (!Match('echo', '(')) return nullptr;
-	if (val = Value(); !val) return nullptr;
+	if (val = BoolExpr(); !val) return nullptr;
 	if (!Match(')')) return nullptr;
 	return AST::Create<AST::Echo>(val);
 }
@@ -282,6 +283,69 @@ AST::AST* Parser::FunCall()
 		}
 	}
 	return nullptr;
+}
+
+AST::AST* Parser::BoolExpr()
+{
+	auto bt = BoolTerm();
+	if (!bt) return nullptr;
+	if (!Match('&&')) return bt;
+	auto be = BoolExpr();
+	if (!be) return nullptr;
+	return AST::CreateBinExpr<'&&'>(bt, be);
+}
+
+AST::AST* Parser::BoolTerm()
+{
+	auto bf = BoolFactor();
+	if (!bf) return nullptr;
+	if (!Match('||')) return bf;
+	auto bt = BoolTerm();
+	if (!bt) return nullptr;
+	return AST::CreateBinExpr<'||'>(bf, bt);
+}
+
+AST::AST* Parser::BoolFactor()
+{
+	if (Match('!'))
+	{
+		auto bp = BoolPrim();
+		if (!bp) return nullptr;
+		return AST::CreateBinExpr<'!'>(nullptr, bp);
+	}
+	auto bp = BoolPrim();
+	if (!bp) return nullptr;
+	return bp;
+}
+
+AST::AST* Parser::BoolPrim()
+{
+	auto val1 = Value();
+	if (!val1) return nullptr;
+	if (Match('==') || Match('>') || Match('>=') || Match('<=') || Match('!='))
+	{
+		auto token = Peek(-1);
+		auto val2 = Value();
+		if (!val2) return nullptr;
+		switch (token.type)
+		{
+		case '==':
+			return AST::CreateBinExpr<'=='>(val1, val2);
+		case '>':
+			return AST::CreateBinExpr<'>'>(val1, val2);
+		case '>=':
+			return AST::CreateBinExpr<'>='>(val1, val2);
+		case '<':
+			return AST::CreateBinExpr<'<'>(val1, val2);
+		case '<=':
+			return AST::CreateBinExpr<'<='>(val1, val2);
+		case '!=':
+			return AST::CreateBinExpr<'!='>(val1, val2);
+		default:
+			break;
+		}
+	}
+	return val1;
 }
 
 //¥Ú”°≥ÈœÛ”Ô∑® ˜

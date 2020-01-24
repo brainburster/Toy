@@ -14,9 +14,9 @@
 ### 语句
 
 - [x] SS : {S}
-- [x] S : ECHO "(" VAR ")" | ASS | VAL | FuncDef | Funcall
+- [x] S : ECHO "(" BE ")" | ASS | BE | FuncDef | Funcall | If
 - [x] ASS : ID | ID "=" VAL
-- [x] VAL : STR | E | BOOL | Funcall
+- [x] VAL : STR | E | Funcall
 
 ### 计算表达式
 
@@ -34,21 +34,22 @@
 - [x] Args : "(" VAL{"," VAL} ")" | "(" ")"
 - [x] Params : "(" ID{"," ID} ")" | "(" ")"
 
-### 条件
+### 布尔表达式
 
-- [ ] Condition :  BOOLEXPR {LogicalOp BOOLEXPR}
-- [ ] BOOLEXPR :  BOOL | E ComparisonOp E
-- [ ] ComparisonOp : "==" | ">" | "<" | ">=" | "<="
-- [ ] LogicalOp : "&&" | "||" | "!"
+- [x] BE : BT "&&" BE | BT
+- [x] BT : BF "||" BT | BF
+- [x] BF : "!" BP | BP
+- [x] BP : VAL [ ComOp VAL ]
+- [x] ComOp : "==" | ">" | "<" | ">=" | "<=" | "!="
 
 ### 循环分支结构
 
-- [ ] If : "if" "(" Condition ")" Block ElseIfList
+- [ ] If : "if" "(" BE ")" Block ElseIfList
 - [ ] ElseIfList ：$ | Else | ElseIf ElseIfList
-- [ ] ElseIf : "elif" "(" Condition ")"  Block
+- [ ] ElseIf : "elif" "(" BE ")"  Block
 - [ ] Else : "else" Block
 - [ ] Lable : ID ":"
-- [ ] Goto : "goto" : id
+- [ ] Goto : "goto" : ID
 
 ### 函数
 

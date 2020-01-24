@@ -17,7 +17,6 @@ private:
 	int Seek(int offset = 1);
 	void Scan(const char*);
 
-	//Ω‚ŒˆœÓƒø
 	AST::AST* Stats();
 	AST::AST* Stat();
 	AST::AST* Echo();
@@ -35,15 +34,23 @@ private:
 	AST::AST* Params();
 	AST::AST* FuncDef();
 	AST::AST* FunCall();
+	AST::AST* BoolExpr();
+	AST::AST* BoolTerm();
+	AST::AST* BoolFactor();
+	AST::AST* BoolPrim();
+	AST::AST* If();
+	AST::AST* ElseIfList();
+	AST::AST* ElseIf();
+	AST::AST* Else();
 
 	//∆•≈‰token
 	template<typename... Args>
-	auto Match(Args... args) ->typename std::enable_if<(std::is_integral_v<Args> &&...), bool>::type
+	auto Match(Args... args) ->typename std::enable_if<(std::is_integral_v<Args> &&...), int>::type
 	{
 		int i = 0;
 		bool status = (_Match(args, i++) &&...);
-		status ? Seek(i) : 0;
-		return status;
+		i = status ? (Seek(i), i) : 0;
+		return i;
 	}
 	bool _Match(int type, int offset)
 	{
