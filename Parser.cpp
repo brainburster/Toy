@@ -146,7 +146,7 @@ AST::AST* Parser::FactorExpr()
 	{
 		if (auto p = PrimExpr())
 		{
-			return AST::CreateBinExpr<'-'>(nullptr, p);
+			return AST::Create<AST::Negative>(p);
 		}
 	}
 	auto p1 = PrimExpr();

@@ -73,6 +73,7 @@ namespace AST
 	struct NumValue : Tree<0>, Expr { double value = 0; };
 	struct StrValue : Tree<0> { int id = 0; };
 	struct BoolValue : Tree<0>, Expr { bool value = false; };
+	struct Negative : Tree<1>, Expr {};
 	//实参，形参列表
 	struct Args : Tree<2> {};
 	struct Params : Tree<2> {};

@@ -262,6 +262,15 @@ bool Interpreter::EvalExpr(AST::Expr* expr)
 		_curEnv->push(d->value);
 		return true;
 	}
+	if (auto neg = dynamic_cast<AST::Negative*>(expr))
+	{
+		if (auto e = dynamic_cast<AST::Expr*>(AST::L(neg))) {
+			if (!EvalExpr(e)) { return false; }
+			_curEnv->push(-_curEnv->pop()->value.dValue);
+			return true;
+		}
+		return false;
+	}
 	if (auto id = dynamic_cast<AST::ID*>(expr))
 	{
 		auto value = getVar(id->id);

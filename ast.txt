@@ -31,7 +31,7 @@
 								(id : b)
 						(Stats)
 							(Echo)
-								('-')
+								(Negative)
 									(id : b)
 							(Stats)
 								("中文变量测试:")
