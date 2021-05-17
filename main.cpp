@@ -34,18 +34,29 @@ int main(int argc, char** argv)
 	{
 		path = argv[1];
 	}
+
+	FileScanner scanner{ path };
 	Parser parser;
 	Interpreter interpreter;
-	AST::AST* ast;
+	AST::AST* ast = nullptr;
+	try
 	{
-		Redirect rd("./token.txt");
-		ast = parser.Parse(path);
-	}
+		{
+			Redirect rd("./token.txt");
+			ast = parser.Parse(std::move(scanner));
+		}
 
-	{
-		Redirect rd("./ast.txt");
-		Parser::PrintAST(ast);
+		{
+			Redirect rd("./ast.txt");
+			Parser::PrintAST(ast);
+		}
+		interpreter.Eval(ast);
 	}
-	interpreter.Eval(ast);
-	delete ast;
+	catch (...)
+	{
+		//...
+	}
+	if (!ast) {
+		delete ast;
+	}
 }

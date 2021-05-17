@@ -1,13 +1,14 @@
 #pragma once
 #include "AST.h"
 #include "Token.h"
+#include "Scanner.h"
 #include <vector>
 
 class Parser
 {
 public:
 	Parser() :_cur(0) {}
-	AST::AST* Parse(const char*);
+	AST::AST* Parse(IScanner&& s);
 	void Reserve(int n) { _buffer.reserve(n); }
 	static void PrintAST(AST::AST* ast, int n = 0);
 private:
@@ -15,7 +16,7 @@ private:
 	int _cur;
 	const Token::Token& Peek(int n = 0);
 	int Seek(int offset = 1);
-	void Scan(const char*);
+	void ScanFile(const char*);
 
 	AST::AST* Stats();
 	AST::AST* Stat();

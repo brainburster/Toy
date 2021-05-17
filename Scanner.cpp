@@ -3,15 +3,12 @@
 #include <iostream>
 #include <map>
 
-Scanner::Scanner(const char* filePath) :
+IScanner::IScanner() :
 	_buffer(), _cur(0), _last(0)
 {
-	std::ifstream sourceFile(filePath);
-
-	_buffer << sourceFile.rdbuf();
 }
 
-Token::Token Scanner::GetToken()
+Token::Token IScanner::GetToken()
 {
 	_cur = _buffer.peek();
 
@@ -74,14 +71,14 @@ Token::Token Scanner::GetToken()
 }
 
 //私有函数可以在cpp文件里设置为inline
-inline void Scanner::Read()
+inline void IScanner::Read()
 {
 	_last = _buffer.get();
 	_cur = _buffer.peek();
 	return;
 }
 
-void Scanner::IgnoreBlank()
+void IScanner::IgnoreBlank()
 {
 	while (' ' == _cur || '\t' == _cur || '\r' == _cur || '\n' == _cur)
 	{
@@ -89,7 +86,7 @@ void Scanner::IgnoreBlank()
 	}
 }
 
-void Scanner::IgnoreComment()
+void IScanner::IgnoreComment()
 {
 	if ('#' != _cur)
 	{
@@ -103,7 +100,7 @@ void Scanner::IgnoreComment()
 	IgnoreComment();
 }
 
-std::string Scanner::GetIdentifierOrKeyword()
+std::string IScanner::GetIdentifierOrKeyword()
 {
 	std::string str;
 	str.reserve(16);
@@ -132,7 +129,7 @@ std::string Scanner::GetIdentifierOrKeyword()
 	return str;
 }
 
-std::string Scanner::GetStringLiteral(int quote)
+std::string IScanner::GetStringLiteral(int quote)
 {
 	std::string str;
 	str.reserve(16);
@@ -153,14 +150,14 @@ std::string Scanner::GetStringLiteral(int quote)
 	return str;
 }
 
-double Scanner::GetNumber()
+double IScanner::GetNumber()
 {
 	double number;
 	_buffer >> number;
 	return number;
 }
 
-int Scanner::GetOperator()
+int IScanner::GetOperator()
 {
 	int op = _cur;
 	switch (_cur)
@@ -220,7 +217,7 @@ int Scanner::GetOperator()
 	return 0;
 }
 
-int Scanner::GetKeyWord(const std::string& str)
+int IScanner::GetKeyWord(const std::string& str)
 {
 	if (str.compare("if") == 0)
 	{
@@ -267,7 +264,7 @@ int Scanner::GetKeyWord(const std::string& str)
 //	return ((i & 0x000000FF) << 24) | ((i & 0x0000FF00) << 8) | ((i & 0x00FF0000) >> 8) | ((i & 0xFF000000) >> 24);
 //}
 
-std::string Scanner::Token2String(const Token::Token& token)
+std::string IScanner::Token2String(const Token::Token& token)
 {
 	std::stringstream ss;
 
@@ -306,4 +303,16 @@ std::string Scanner::Token2String(const Token::Token& token)
 
 	ss << " >";
 	return ss.str();
+}
+
+FileScanner::FileScanner(const char* filePath)
+{
+	std::ifstream sourceFile(filePath);
+
+	_buffer << sourceFile.rdbuf();
+}
+
+SrcScanner::SrcScanner(const std::string& src)
+{
+	_buffer << src;
 }

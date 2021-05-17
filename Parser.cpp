@@ -29,15 +29,8 @@ int Parser::Seek(int offset)
 	return _cur = Clamp<int, int, int>(_cur + offset, 0, (int)_buffer.size() - 1);
 }
 
-AST::AST* Parser::Parse(const char* path)
+AST::AST* Parser::Parse(IScanner&& s)
 {
-	Scan(path);
-	return Stats();
-}
-
-void Parser::Scan(const char* path)
-{
-	Scanner s{ path };
 	while (true)
 	{
 		auto t = s.GetToken();
@@ -51,6 +44,7 @@ void Parser::Scan(const char* path)
 	{
 		std::cout << s.Token2String(t) << std::endl;
 	}
+	return Stats();
 }
 
 AST::AST* Parser::Stats()
