@@ -46,10 +46,14 @@
 
 - [x] If : "if" "(" BE ")" Block [ ElseIfList ]
 - [x] ElseIfList ：Else | ElseIf ElseIfList
-- [x] ElseIf : "elif" "(" BE ")"  Block [ ElseIfList ] 
+- [x] ElseIf : "elif" "(" BE ")"  Block [ ElseIfList ]
 - [x] Else : "else" Block
 
 ### 函数
 
 - [x] FuncDef : "func" ID Params BLOCK
 - [x] FunCall : ID Args
+
+## 例子
+
+![例子](/example.png)
