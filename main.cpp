@@ -26,6 +26,7 @@ public:
 int main(int argc, char** argv)
 {
 	const char* path;
+
 	if (argc == 1)
 	{
 		path = "./test.txt";
@@ -37,26 +38,20 @@ int main(int argc, char** argv)
 
 	FileScanner scanner{ path };
 	Parser parser;
-	Interpreter interpreter;
 	AST::AST* ast = nullptr;
-	try
 	{
-		{
-			Redirect rd("./token.txt");
-			ast = parser.Parse(std::move(scanner));
-		}
+		Redirect rd("./token.txt");
+		ast = parser.Parse(std::move(scanner));
+	}
 
-		{
-			Redirect rd("./ast.txt");
-			Parser::PrintAST(ast);
-		}
-		interpreter.Eval(ast);
-	}
-	catch (...)
 	{
-		//...
+		Redirect rd("./ast.txt");
+		Parser::PrintAST(ast);
 	}
-	if (!ast) {
+
+	Interpreter interpreter;
+	interpreter.Eval(ast);
+	if (ast) {
 		delete ast;
 	}
 }
