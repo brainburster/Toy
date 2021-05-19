@@ -2,9 +2,9 @@
 
 尝试不利用第三方工具，写一个玩具语言的纯手工解释器
 
-## wasm版本:
+## wasm版本
 
-  https://brainburster.github.io/toy/wasm/toy.html
+  <https://brainburster.github.io/toy/wasm/toy.html>
 
 ## 终结符
 
