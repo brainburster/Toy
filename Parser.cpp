@@ -101,40 +101,116 @@ AST::AST* Parser::Echo()
 	return AST::Create<AST::Echo>(val);
 }
 
+int opp(int op)
+{
+	switch (op)
+	{
+	case '+':
+	case '-':
+		return 1;
+	case '*':
+	case '/':
+		return 2;
+	case '**':
+		return 3;
+	default:
+		break;
+	}
+	return 4;
+}
+
 AST::AST* Parser::Expr()
 {
-	auto t = TermExpr();
-	if (Match('+'))
+	AST::AST* e1 = TermExpr();
+	AST::AST* e2 = nullptr;
+	AST::AST* e3 = nullptr;
+	int op1 = -1;
+	int op2 = op1;
+	while (true)
 	{
-		auto e = Expr();
-		return  AST::CreateBinExpr<'+'>(t, e);
-	}
-	else if (Match('-'))
-	{
-		auto e = Expr();
-		return  AST::CreateBinExpr<'-'>(t, e);
-	}
+		if (Match('+'))
+		{
+			op1 = '+';
+		}
+		else if (Match('-'))
+		{
+			op1 = '-';
+		}
+		else if (Match('*')) {
+			op1 = '*';
+		}
+		else if (Match('/')) {
+			op1 = '/';
+		}
+		else if (Match('**'))
+		{
+			op1 = '**';
+		}
+		else {
+			return e1;
+		}
 
-	return t;
+		if (e2 = TermExpr(), !e2) {
+			return nullptr;
+		}
+
+		//判断运算符优先级
+		if (opp(op1) <= opp(op2))
+		{
+			switch (op1)
+			{
+			case '+':
+				e1 = AST::CreateBinExpr<'+'>(e1, e2);
+				break;
+			case '-':
+				e1 = AST::CreateBinExpr<'-'>(e1, e2);
+				break;
+			case '*':
+				e1 = AST::CreateBinExpr<'*'>(e1, e2);
+				break;
+			case '/':
+				e1 = AST::CreateBinExpr<'/'>(e1, e2);
+				break;
+			case '**':
+				e1 = AST::CreateBinExpr<'**'>(e1, e2);
+				break;
+			default:
+				return nullptr;
+			}
+		}
+		else
+		{
+			switch (op1)
+			{
+			case '+':
+				e2 = AST::CreateBinExpr<'+'>(e3, e2);
+				break;
+			case '-':
+				e2 = AST::CreateBinExpr<'-'>(e3, e2);
+				break;
+			case '*':
+				e2 = AST::CreateBinExpr<'*'>(e3, e2);
+				break;
+			case '/':
+				e2 = AST::CreateBinExpr<'/'>(e3, e2);
+				break;
+			case '**':
+				e2 = AST::CreateBinExpr<'**'>(e3, e2);
+				break;
+			default:
+				return nullptr;
+			}
+			AST::R(static_cast<AST::Tree<2>*>(e1)) = e2;
+		}
+
+		//
+		op2 = op1;
+		e3 = e2;
+	}
+	return e1;
 }
 
 AST::AST* Parser::TermExpr()
-{
-	auto f = FactorExpr();
-	if (Match('*'))
-	{
-		auto t = TermExpr();
-		return  AST::CreateBinExpr<'*'>(f, t);
-	}
-	else if (Match('/'))
-	{
-		auto t = TermExpr();
-		return  AST::CreateBinExpr<'/'>(f, t);
-	}
-	return f;
-}
-
-AST::AST* Parser::FactorExpr()
 {
 	if (Match('-'))
 	{
@@ -143,18 +219,7 @@ AST::AST* Parser::FactorExpr()
 			return AST::Create<AST::Negative>(p);
 		}
 	}
-	auto p1 = PrimExpr();
-	if (Match('**'))
-	{
-		if (auto p2 = PrimExpr())
-		{
-			return  AST::CreateBinExpr<'**'>(p1, p2);
-		}
-		else {
-			return nullptr;
-		}
-	}
-	return p1;
+	return PrimExpr();
 }
 
 AST::AST* Parser::PrimExpr()
