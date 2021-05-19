@@ -4,7 +4,7 @@
 #include <sstream>
 #include <fstream>
 
-//�ض���
+//重定向
 class Redirect
 {
 private:

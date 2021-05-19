@@ -22,6 +22,7 @@ inline bool SafeDelete(T* p)
 
 namespace AST
 {
+	//语法树基类
 	struct AST
 	{
 		virtual ~AST() = default;
@@ -133,8 +134,8 @@ namespace AST
 	{
 		auto* tree = new T{};
 		int i = 0;
-		//std::initializer_list<int>{ ((tree->children[i++] = args), 0)... }; //c++17֮ǰ��д��
-		(((tree->children[i++] = args), 0) + ... + 0); //д��3Ԫ�۵�����ʽ��Ŀ����Ϊ��ʹargs����Ϊ��
+		//std::initializer_list<int>{ ((tree->children[i++] = args), 0)... } //c++17的写法
+		(((tree->children[i++] = args), 0) + ... + 0);
 		return tree;
 	}
 
