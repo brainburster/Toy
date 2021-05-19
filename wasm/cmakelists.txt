@@ -1,0 +1,23 @@
+cmake_minimum_required(VERSION 3.9)
+
+#project name
+project(toy_web)
+
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/em_build/output)
+set(CMAKE_BUILD_TYPE "Release")
+set(CMAKE_CXX_STANDARD 17)
+
+#head file
+include_directories(include /mnt/g/em/linux/emsdk/upstream/emscripten/system/include)
+include_directories(include ..)
+
+
+#source file
+aux_source_directory(.. DIR_SRCS)
+list(REMOVE_ITEM DIR_SRCS "../main.cpp")
+#message("DIR_SRCS: " ${DIR_SRCS})
+
+#add executable file
+add_executable(toy web_main.cpp ${DIR_SRCS})
+
+set_target_properties(toy PROPERTIES LINK_FLAGS "-s MALLOC=\"emmalloc\" -s EXPORTED_FUNCTIONS=\'[\"_malloc\",\"_free\",\"_eval\"]\' -O1 -Wno-multichar")

@@ -1,10 +1,11 @@
 #include "Interpreter.h"
 #include "StringTable.h"
 #include <iostream>
+#include <list>
 
 #pragma region PRINT
 
-//Ë½ÓÐÄ£°åº¯Êý£¬ÊµÏÖ¿ÉÒÔ·Åµ½cppÎÄ¼þÖÐ
+//Ë½ï¿½ï¿½Ä£ï¿½åº¯ï¿½ï¿½ï¿½ï¿½Êµï¿½Ö¿ï¿½ï¿½Ô·Åµï¿½cppï¿½Ä¼ï¿½ï¿½ï¿½
 template<typename T>
 inline void Interpreter::Print(T value)
 {
@@ -77,7 +78,7 @@ bool Interpreter::EvalFunCall(AST::FunCall* funcall)
 	Env env{};
 	auto old = _curEnv;
 	_curEnv = &env;
-	//²ÎÊýÑ¹Õ»
+	//ï¿½ï¿½ï¿½ï¿½Ñ¹Õ»
 	for (int param : paramlist)
 	{
 		AST::AST* value = AST::L(args);
@@ -182,7 +183,7 @@ bool Interpreter::EvalStats(AST::AST* stat)
 	{
 		return EvalIf(ifstat);
 	}
-	//ÆäËû
+	//ï¿½ï¿½ï¿½ï¿½
 	if (auto e = dynamic_cast<AST::BinExpr<>*>(stat))
 	{
 		if (!EvalExpr(e)) { return false; }
@@ -207,7 +208,7 @@ bool Interpreter::EvalAssignment(int id, AST::AST* value)
 	}
 	if (auto expr = dynamic_cast<AST::BinExpr<>*>(value))
 	{
-		//¼ÆËã±í´ïÊ½µÄÖµ
+		//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê½ï¿½ï¿½Öµ
 		if (!EvalExpr(expr)) { return false; }
 		auto result = _curEnv->pop();
 		if (!result.has_value()) { return false; }
@@ -246,7 +247,7 @@ bool Interpreter::EvalEcho(AST::Echo* echo)
 		return true;
 	}
 	Print(typeid(*childern).name());
-	//´òÓ¡
+	//ï¿½ï¿½Ó¡
 	return false;
 }
 

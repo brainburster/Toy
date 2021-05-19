@@ -50,23 +50,25 @@ namespace AST
 	struct ACC :AST {};
 	struct Error :AST {};
 
-	template<int t = NULL> struct ASTypeToStr : ASTypeToStr<>
-	{
-		int type() override { return t; }
-	};
-	template<> struct ASTypeToStr<>
+	template<int t> struct ASTypeToStr;
+	template<> struct ASTypeToStr<NULL>
 	{
 		virtual int type() = 0;
 		std::string toString();
 	};
+	template<int t = NULL> struct ASTypeToStr : ASTypeToStr<NULL>
+	{
+		int type() override { return t; }
+	};
 
-	//2Ôª±í´ïÊ½
-	template<int t = NULL> struct BinExpr : Tree<2>, ASTypeToStr<t>, BinExpr<> {};
-	template<> struct BinExpr<> { virtual void RTTI() {} };
-	//±í´ïÊ½
+	//2Ôªï¿½ï¿½ï¿½ï¿½Ê½
+	template<int t> struct BinExpr;
+	template<> struct BinExpr<NULL> { virtual void RTTI() {} };
+	template<int t = NULL> struct BinExpr : Tree<2>, ASTypeToStr<t>, BinExpr<NULL> {};
+	//ï¿½ï¿½ï¿½ï¿½Ê½
 	using Expr = BinExpr<>;
 
-	//±êÊ¶·û
+	//ï¿½ï¿½Ê¶ï¿½ï¿½
 	struct ID : Tree<0>, Expr { int id = 0; };
 	using Name = ID;
 	//Öµ
@@ -74,10 +76,10 @@ namespace AST
 	struct StrValue : Tree<0> { int id = 0; };
 	struct BoolValue : Tree<0>, Expr { bool value = false; };
 	struct Negative : Tree<1>, Expr {};
-	//Êµ²Î£¬ÐÎ²ÎÁÐ±í
+	//Êµï¿½Î£ï¿½ï¿½Î²ï¿½ï¿½Ð±ï¿½
 	struct Args : Tree<2> {};
 	struct Params : Tree<2> {};
-	//Óï¾ä
+	//ï¿½ï¿½ï¿½
 	struct Stats : Tree<2> {};
 	struct Echo : Tree<1> {};
 	struct FuncDef : Tree<3> {};
@@ -116,14 +118,14 @@ namespace AST
 	template<typename... Args>
 	constexpr int Length_v = Length<Args...>::value;
 
-	//Ê÷Ö®¹¤³§
+	//ï¿½ï¿½Ö®ï¿½ï¿½ï¿½ï¿½
 	template<typename T, typename... Args, typename Enable = std::enable_if_t<std::extent_v<decltype(T::children)> >= Length_v<Args...> && ((std::is_base_of_v<AST, std::remove_pointer_t<Args>> || std::is_same_v<nullptr_t, Args>) &&...) >>
 	inline auto Create(Args... args) ->T* //-> Tree<std::extent_v<decltype(T::children)>>*
 	{
 		auto* tree = new T{};
 		int i = 0;
-		//std::initializer_list<int>{ ((tree->children[i++] = args), 0)... }; //c++17Ö®Ç°µÄÐ´·¨
-		(((tree->children[i++] = args), 0) + ... + 0); //Ð´³É3ÔªÕÛµþ±í´ïÊ½µÄÄ¿µÄÊÇÎªÁËÊ¹args¿ÉÒÔÎª¿Õ
+		//std::initializer_list<int>{ ((tree->children[i++] = args), 0)... }; //c++17Ö®Ç°ï¿½ï¿½Ð´ï¿½ï¿½
+		(((tree->children[i++] = args), 0) + ... + 0); //Ð´ï¿½ï¿½3Ôªï¿½Ûµï¿½ï¿½ï¿½ï¿½ï¿½Ê½ï¿½ï¿½Ä¿ï¿½ï¿½ï¿½ï¿½Îªï¿½ï¿½Ê¹argsï¿½ï¿½ï¿½ï¿½Îªï¿½ï¿½
 		return tree;
 	}
 
@@ -158,14 +160,14 @@ namespace AST
 		return new T{};
 	}
 
-	//¶þÔª²Ù×÷·û¹¤³§
+	//ï¿½ï¿½Ôªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	template<int type>
 	inline auto CreateBinExpr(AST* a, AST* b)
 	{
 		return Create<BinExpr<type>>(a, b);
 	};
 
-	//°Ñ¶à×Ö½Ú×Ö·ûÕûÐÎ×ÖÃæÁ¿×ª»»Îª×Ö·û´®
+	//ï¿½Ñ¶ï¿½ï¿½Ö½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½Îªï¿½Ö·ï¿½ï¿½ï¿½
 	inline std::string ASTypeToStr<>::toString()
 	{
 		int tempi = type();

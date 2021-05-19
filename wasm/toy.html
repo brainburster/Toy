@@ -1,0 +1,49 @@
+<!doctype html>
+
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>toy解释器</title>
+  </head>
+
+  <body>
+    <textarea name="" id="input" cols="30" rows="20"></textarea>
+    <textarea name="" id="output" cols="30" rows="20"></textarea>
+    <script>
+        const input = document.getElementById('input');
+        const output = document.getElementById('output');
+        Module = {};
+        input.value = `\
+#"计算测试:"
+echo((1+2)*3);
+func greeting(){
+    "hello world!"
+}
+if(1+1==2){
+    echo("1+1=2")
+    greeting();
+}else{
+    echo("1+1!=2")
+}
+
+`
+        Module.onRuntimeInitialized = function () {
+            input.oninput = (e)=>{
+                if(e.data === null){
+                    //console.log(x.value);
+                    const str = input.value;
+                    str.concat(0);
+                    //const pBuffer = Module._malloc(10000);
+                    const data = allocateUTF8(str);
+                    const re = Module._eval(data);
+                    output.value = UTF8ToString(re,10000);
+
+                    Module._free(data);
+                }
+            }
+            input.oninput({data:null});
+        }
+    </script>
+    <script src="em_build/output/toy.js"></script>
+  </body>
+</html>

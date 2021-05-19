@@ -4,7 +4,7 @@
 #include <sstream>
 #include <fstream>
 
-//ÖØ¶¨Ïò
+//ï¿½Ø¶ï¿½ï¿½ï¿½
 class Redirect
 {
 private:
