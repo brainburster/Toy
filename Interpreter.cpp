@@ -336,59 +336,62 @@ bool Interpreter::EvalExpr(AST::Expr* expr)
 		}
 		return true;
 	}
+	auto rhs = _curEnv->pop()->value.dValue;
+	auto lhs = _curEnv->pop()->value.dValue;
+
 	if (typeid(AST::BinExpr<'=='>) == typeid(*expr))
 	{
-		_curEnv->push(_curEnv->pop()->value.dValue == _curEnv->pop()->value.dValue);
+		_curEnv->push(lhs == rhs);
 		return true;
 	}
 	if (typeid(AST::BinExpr<'>='>) == typeid(*expr))
 	{
-		_curEnv->push(_curEnv->pop()->value.dValue >= _curEnv->pop()->value.dValue);
+		_curEnv->push(lhs >= rhs);
 		return true;
 	}
 	if (typeid(AST::BinExpr<'<='>) == typeid(*expr))
 	{
-		_curEnv->push(_curEnv->pop()->value.dValue <= _curEnv->pop()->value.dValue);
+		_curEnv->push(lhs <= rhs);
 		return true;
 	}
 	if (typeid(AST::BinExpr<'!='>) == typeid(*expr))
 	{
-		_curEnv->push(_curEnv->pop()->value.dValue != _curEnv->pop()->value.dValue);
+		_curEnv->push(lhs != rhs);
 		return true;
 	}
 	if (typeid(AST::BinExpr<'>'>) == typeid(*expr))
 	{
-		_curEnv->push(_curEnv->pop()->value.dValue > _curEnv->pop()->value.dValue);
+		_curEnv->push(lhs > rhs);
 		return true;
 	}
 	if (typeid(AST::BinExpr<'<'>) == typeid(*expr))
 	{
-		_curEnv->push(_curEnv->pop()->value.dValue < _curEnv->pop()->value.dValue);
+		_curEnv->push(lhs < rhs);
 		return true;
 	}
 	if (typeid(AST::BinExpr<'+'>) == typeid(*expr))
 	{
-		_curEnv->push(_curEnv->pop()->value.dValue + _curEnv->pop()->value.dValue);
+		_curEnv->push(lhs + rhs);
 		return true;
 	}
 	if (typeid(AST::BinExpr<'-'>) == typeid(*expr))
 	{
-		_curEnv->push(_curEnv->pop()->value.dValue - _curEnv->pop()->value.dValue);
+		_curEnv->push(lhs - rhs);
 		return true;
 	}
 	if (typeid(AST::BinExpr<'*'>) == typeid(*expr))
 	{
-		_curEnv->push(_curEnv->pop()->value.dValue * _curEnv->pop()->value.dValue);
+		_curEnv->push(lhs * rhs);
 		return true;
 	}
 	if (typeid(AST::BinExpr<'/'>) == typeid(*expr))
 	{
-		_curEnv->push(_curEnv->pop()->value.dValue / _curEnv->pop()->value.dValue);
+		_curEnv->push(lhs / rhs);
 		return true;
 	}
 	if (typeid(AST::BinExpr<'**'>) == typeid(*expr))
 	{
-		_curEnv->push(pow(_curEnv->pop()->value.dValue, _curEnv->pop()->value.dValue));
+		_curEnv->push(pow(lhs, rhs));
 		return true;
 	}
 	return false;

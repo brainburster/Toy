@@ -342,3 +342,5 @@ healthchecksdb
 #
 wasm/em_build
 .vscode
+
+wasm/out/build
