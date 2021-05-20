@@ -40,6 +40,7 @@ bool Interpreter::Eval(AST::AST* ast)
 		}
 		if (!EvalStats(AST::L(stats)))
 		{
+			std::cout << "Error" << std::endl;
 			return false;
 		}
 		stats = dynamic_cast<AST::Stats*>(AST::R(stats));
