@@ -19,16 +19,16 @@ func fast_sort(head, tail){
             j=j-1;
         }
         if (i < j){
-            i=i+1;
             arr[i] = arr[j];
+            i=i+1;
         }
 
         loop (i < j && arr[i] < x){
             i=i+1;
         }
         if (i < j){
-            j=j-1;
             arr[j] = arr[i];
+            j=j-1;
         }
     }
     arr[i] = x;

@@ -255,24 +255,47 @@ int Interpreter::EvalArray(AST::Array* arr)
 
 bool Interpreter::EvalAt(AST::At* at)
 {
-	auto v = _curEnv->get(static_cast<AST::ID*>(AST::L(at))->id);
-	if (!v.has_value()) return false;
-	int location = v.value().value.iValue;
-	if (auto off = dynamic_cast<AST::Expr*>(AST::R(at)))
+	if (auto v = _curEnv->get(static_cast<AST::ID*>(AST::L(at))->id))
 	{
-		EvalExpr(off);
-		auto value = _curEnv->pop();
-		if (!value.has_value()) return false;
-		int offset = static_cast<int>(value.value().value.dValue);
-		int length = _curEnv->_variable[location - 1].value.iValue;
-		if (offset >= length)
+		int location = v.value().value.iValue;
+		if (auto off = dynamic_cast<AST::Expr*>(AST::R(at)))
 		{
-			std::cout << "Error: " << "out of range" << std::endl;
-			return false;
+			EvalExpr(off);
+			auto value = _curEnv->pop();
+			if (!value.has_value()) return false;
+			int offset = static_cast<int>(value.value().value.dValue);
+			int length = _curEnv->_variable[location - 1].value.iValue;
+			if (offset >= length)
+			{
+				std::cout << "Error: " << "out of range" << std::endl;
+				return false;
+			}
+			auto v = _curEnv->at(location + offset);
+			if (!v.has_value()) return false;
+			_curEnv->push(v.value());
 		}
-		auto v = _curEnv->at(location + offset);
-		if (!v.has_value()) return false;
-		_curEnv->push(v.value());
+	}
+	else
+	{
+		auto vv = _global->get(static_cast<AST::ID*>(AST::L(at))->id);
+		if (!vv.has_value()) return false;
+		int location = vv.value().value.iValue;
+		if (auto off = dynamic_cast<AST::Expr*>(AST::R(at)))
+		{
+			EvalExpr(off);
+			auto value = _curEnv->pop();
+			if (!value.has_value()) return false;
+			int offset = static_cast<int>(value.value().value.dValue);
+			int length = _global->_variable[location - 1].value.iValue;
+			if (offset >= length)
+			{
+				std::cout << "Error: " << "out of range" << std::endl;
+				return false;
+			}
+			auto v = _global->at(location + offset);
+			if (!v.has_value()) return false;
+			_curEnv->push(v.value());
+		}
 	}
 	return true;
 }
@@ -298,28 +321,53 @@ bool Interpreter::EvalStats(AST::AST* stat)
 		}
 		else if (auto at = dynamic_cast<AST::At*>(AST::L(ass)))
 		{
-			auto v = _curEnv->get(static_cast<AST::ID*>(AST::L(at))->id);
-			if (!v.has_value()) return false;
-			int location = v.value().value.iValue;
-			if (auto off = dynamic_cast<AST::Expr*>(AST::R(at)))
-			{
-				EvalExpr(off);
-				auto value = _curEnv->pop();
-				if (!value.has_value()) return false;
-				int offset = static_cast<int>(value.value().value.dValue);
-				int length = _curEnv->_variable[location - 1].value.iValue;
-				if (offset >= length)
+			if (auto v = _curEnv->get(static_cast<AST::ID*>(AST::L(at))->id)) {
+				int location = v.value().value.iValue;
+				if (auto off = dynamic_cast<AST::Expr*>(AST::R(at)))
 				{
-					std::cout << "Error: " << "out of range" << std::endl;
-					return false;
+					EvalExpr(off);
+					auto value = _curEnv->pop();
+					if (!value.has_value()) return false;
+					int offset = static_cast<int>(value.value().value.dValue);
+					int length = _curEnv->_variable[location - 1].value.iValue;
+					if (offset >= length)
+					{
+						std::cout << "Error: " << "out of range" << std::endl;
+						return false;
+					}
+					auto v = dynamic_cast<AST::Expr*>(AST::R(ass));
+					if (!v) return -1;
+					if (!EvalExpr(v)) return -1;
+					auto v2 = _curEnv->pop();
+					if (!v2.has_value()) return false;
+					_curEnv->_variable[location + offset] = v2.value();
+					return true;
 				}
-				auto v = dynamic_cast<AST::Expr*>(AST::R(ass));
-				if (!v) return -1;
-				if (!EvalExpr(v)) return -1;
-				auto v2 = _curEnv->pop();
-				if (!v2.has_value()) return false;
-				_curEnv->_variable[location + offset] = v2.value();
-				return true;
+			}
+			else {
+				auto vv = _global->get(static_cast<AST::ID*>(AST::L(at))->id);
+				if (!vv.has_value()) return false;
+				int location = vv.value().value.iValue;
+				if (auto off = dynamic_cast<AST::Expr*>(AST::R(at)))
+				{
+					EvalExpr(off);
+					auto value = _curEnv->pop();
+					if (!value.has_value()) return false;
+					int offset = static_cast<int>(value.value().value.dValue);
+					int length = _global->_variable[location - 1].value.iValue;
+					if (offset >= length)
+					{
+						std::cout << "Error: " << "out of range" << std::endl;
+						return false;
+					}
+					auto v = dynamic_cast<AST::Expr*>(AST::R(ass));
+					if (!v) return -1;
+					if (!EvalExpr(v)) return -1;
+					auto v2 = _curEnv->pop();
+					if (!v2.has_value()) return false;
+					_global->_variable[location + offset] = v2.value();
+					return true;
+				}
 			}
 		}
 		std::cout << "EError: Assignment error. " << std::endl;
