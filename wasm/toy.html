@@ -1,48 +1,84 @@
-<!doctype html>
+<!DOCTYPE html>
 
 <html>
   <head>
-    <meta charset="utf-8">
+    <meta charset="utf-8" />
     <title>toy解释器</title>
   </head>
 
   <body>
-    <textarea name="" id="input" cols="30" rows="20"></textarea>
-    <textarea name="" id="output" cols="30" rows="20"></textarea>
+    <textarea name="" id="input" cols="50" rows="60" spellcheck="false"></textarea>
+    <textarea name="" id="output" cols="50" rows="60" spellcheck="false" readonly="readonly"></textarea>
     <script>
-        const input = document.getElementById('input');
-        const output = document.getElementById('output');
-        Module = {};
-        input.value = `\
-#"计算测试:"
-echo((1+2)*3);
-func greeting(){
-    "hello world!"
-}
-if(1+1==2){
-    echo("1+1=2")
-    greeting();
-}else{
-    echo("1+1!=2")
-}
+      const input = document.getElementById("input");
+      const output = document.getElementById("output");
+      Module = {};
+      input.value = `\
+#定义数组
+arr = [3,12,5,2,1,6,7,9,4,8,0,11,10]
+#打印数组
+echo("before sort:");
+echo(arr)
 
-`
-        Module.onRuntimeInitialized = function () {
-            input.oninput = (e)=>{
-                if(e.data === null){
-                    //console.log(x.value);
-                    const str = input.value;
-                    str.concat(0);
-                    //const pBuffer = Module._malloc(10000);
-                    const data = allocateUTF8(str);
-                    const re = Module._eval(data);
-                    output.value = UTF8ToString(re,10000);
+#定义排序函数
+func fast_sort(head, tail){
+    if(head>=tail){
+        return;
+    }
+    x = arr[head];
+    i = head;
+    j = tail;
 
-                    Module._free(data);
-                }
-            }
-            input.oninput({data:null});
+    loop(i<j)
+    {
+        loop (i < j && arr[j] >= x){
+            j=j-1;
         }
+        if (i < j){
+            arr[i] = arr[j];
+            i=i+1;
+        }
+
+        loop (i < j && arr[i] < x){
+            i=i+1;
+        }
+        if (i < j){
+            arr[j] = arr[i];
+            j=j-1;
+        }
+    }
+    arr[i] = x;
+    fast_sort(head, i-1);
+    fast_sort(i+1, tail);
+}
+
+#排序
+fast_sort(0,12);
+
+#打印数组
+echo("after sort:");
+echo(arr)
+
+你好 = "你好世界"
+echo(你好)
+`;
+      let old = "";
+      const update = () => {
+        const str = input.value;
+        if (str === old) {
+          return;
+        }
+        str.concat(0);
+        const data = allocateUTF8(str);
+        const re = Module._eval(data);
+        output.value = UTF8ToString(re, 10000);
+
+        Module._free(data);
+        old = str;
+      };
+      Module.onRuntimeInitialized = function () {
+        setInterval(update, 200);
+      };
     </script>
     <script src="public/output/toy.js"></script>
   </body>
