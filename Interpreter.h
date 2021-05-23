@@ -39,15 +39,18 @@ private:
 	template<typename T>
 	void push(int id, T value);
 	template<typename T>
+	void push(int id, int type, T value);
+	template<typename T>
 	void push(T value);
 	void clearStack();
 	int find(int id);
 	std::optional<Env::Value> pop();
 	std::optional<Env::Value> top();
 	std::optional<Env::Value> get(int id);
-	std::map<int, int> _map;  //名称到变量地址的映射
-	std::vector<Env::Value> _variable; //变量
-	std::stack<Env::Value> _stack; //临时栈
+	std::optional<Env::Value> at(int location);
+	std::map<int, int> _map;
+	std::vector<Env::Value> _variable;
+	std::stack<Env::Value> _stack;
 };
 
 class Interpreter
@@ -63,10 +66,17 @@ private:
 	bool EvalFunCall(AST::FunCall* funcall);
 	bool EvalIf(AST::IF* ifstat);
 	bool EvalElseIfList(AST::AST* elseIfList);
+	bool EvalLoop(AST::Loop* loop);
+	bool EvalRet(AST::Ret* ret);
+	int EvalArray(AST::Array* arr);
+	bool EvalAt(AST::At* at);
 	bool EvalStats(AST::AST* stats);
 	bool EvalAssignment(int id, AST::AST* value);
 	bool EvalEcho(AST::Echo* echo);
 	bool EvalExpr(AST::Expr* expr);
+	bool EvalNeg(AST::Negative* neg);
+	bool EvalID(AST::ID* id);
+	bool CheckCondition(AST::Expr* condition);
 	const char* EvalStr(AST::StrValue* str);
 	std::optional<Env::Value> getVar(int id);
 	template<typename T>
@@ -147,6 +157,21 @@ inline void Env::push(int id, T value)
 	else
 	{
 		_push(value);
+		_map[id] = (int)_variable.size() - 1;
+	}
+}
+
+template<typename T>
+inline void Env::push(int id, int type, T value)
+{
+	if (auto iter = _map.find(id); iter != _map.end())
+	{
+		int id = iter->second;
+		_push(id, value);
+	}
+	else
+	{
+		_variable.emplace_back(type, value);
 		_map[id] = (int)_variable.size() - 1;
 	}
 }

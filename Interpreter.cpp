@@ -5,13 +5,24 @@
 
 #pragma region PRINT
 
-//因为是私有成员模板所以可以放到cpp文件中实现
-
 template<typename T>
 inline void Interpreter::Print(T value)
 {
-	std::cout << "echo: " << value << std::endl;
+	std::cout << ">>: " << value << std::endl;
 }
+
+template<>
+inline void Interpreter::Print(const char* value)
+{
+	std::cout << ">>: \"" << value << "\"" << std::endl;
+}
+
+template<>
+inline void Interpreter::Print(char* value)
+{
+	std::cout << ">>: \"" << value << "\"" << std::endl;
+}
+
 template<>
 inline void Interpreter::Print(AST::ID* id)
 {
@@ -25,6 +36,33 @@ inline void Interpreter::Print(AST::ID* id)
 	{
 		Print(StringTable::getInstance().GetStr(value->value.iValue));
 	}
+	else if (value->type == 'arr')
+	{
+		std::cout << ">>: [";
+		auto v = _curEnv->get(id->id);
+		if (!v.has_value()) return;
+		int location = v.value().value.iValue;
+		int length = _curEnv->_variable[location - 1].value.iValue;
+		for (int i = 0; i < length; ++i)
+		{
+			auto v = _curEnv->at(location + i);
+			if (!v.has_value()) return;
+			auto value = v.value();
+			if (value.type == 'num')
+			{
+				std::cout << value.value.dValue;
+			}
+			else if (value.type == 'str')
+			{
+				std::cout << "\"" << StringTable::getInstance().GetStr(value.value.iValue) << "\"";
+			}
+			if (i != length - 1)
+			{
+				std::cout << ", ";
+			}
+		}
+		std::cout << "]" << std::endl;
+	}
 }
 
 #pragma endregion
@@ -34,13 +72,16 @@ bool Interpreter::Eval(AST::AST* ast)
 	auto stats = dynamic_cast<AST::Stats*>(ast);
 	while (nullptr != stats)
 	{
-		if (auto echo = dynamic_cast<AST::ACC*>(AST::L(stats)))
+		if (auto acc = dynamic_cast<AST::ACC*>(AST::L(stats)))
 		{
 			return true;
 		}
+		if (auto ret = dynamic_cast<AST::Ret*>(AST::L(stats)))
+		{
+			return EvalRet(ret);
+		}
 		if (!EvalStats(AST::L(stats)))
 		{
-			std::cout << "Error" << std::endl;
 			return false;
 		}
 		stats = dynamic_cast<AST::Stats*>(AST::R(stats));
@@ -77,16 +118,29 @@ bool Interpreter::EvalFunCall(AST::FunCall* funcall)
 		params = dynamic_cast<AST::Params*>(AST::R(params));
 		if (!params) break;
 	}
+	std::list <Env::Value> arglist;
+	for (int param : paramlist)
+	{
+		if (auto expr = dynamic_cast<AST::Expr*>(AST::L(args))) {
+			if (EvalExpr(expr))
+			{
+				auto v = _curEnv->pop();
+				arglist.push_back(v.value_or(Env::Value{ 'num',0 }));
+			}
+		}
+		if (args = dynamic_cast<AST::Args*>(AST::R(args)); !args) break;
+	}
+
 	Env env{};
 	auto old = _curEnv;
 	_curEnv = &env;
-	//??????
+
 	for (int param : paramlist)
 	{
-		AST::AST* value = AST::L(args);
-		EvalAssignment(param, value);
-		if (args = dynamic_cast<AST::Args*>(AST::R(args)); !args) break;
+		_curEnv->push(param, arglist.front());
+		arglist.pop_front();
 	}
+
 	Eval(block);
 	auto result = _curEnv->pop();
 	_curEnv = old;
@@ -106,39 +160,42 @@ bool Interpreter::EvalIf(AST::IF* ifstat)
 	auto condition = dynamic_cast<AST::Expr*>(ifstat->children[0]);
 	auto block = ifstat->children[1];
 	auto elseIfList = ifstat->children[2];
-	bool con = false;
+	if (CheckCondition(condition))
+	{
+		return Eval(block);
+	}
+	if (elseIfList)
+	{
+		return EvalElseIfList(elseIfList);
+	}
+
+	return true;
+}
+
+bool Interpreter::CheckCondition(AST::Expr* condition)
+{
 	if (EvalExpr(condition))
 	{
 		if (auto temp = _curEnv->pop(); temp.has_value())
 		{
 			switch (temp->type)
 			{
+			case 'arr':
+				return true;
+			case 'len':
+				return true;
 			case 'num':
-				con = temp->value.dValue;
-				break;
+				return temp->value.dValue;
 			case 'bool':
-				con = temp->value.bValue;
-				break;
+				return temp->value.bValue;
 			case 'str':
-				con = true;
+				return true;
 			case 'null':
-				con = false;
-				break;
+				return false;
 			}
 		}
 	}
-
-	if (con)
-	{
-		return Eval(block);
-	}
-	if (elseIfList)
-	{
-		EvalElseIfList(elseIfList);
-		return true;
-	}
-
-	return true;
+	return false;
 }
 
 bool Interpreter::EvalElseIfList(AST::AST* elseIfList)
@@ -149,8 +206,73 @@ bool Interpreter::EvalElseIfList(AST::AST* elseIfList)
 	}
 	if (auto elif = dynamic_cast<AST::IF*>(elseIfList))
 	{
-		EvalIf(elif);
-		return true;
+		return EvalIf(elif);
+	}
+	return true;
+}
+
+bool Interpreter::EvalLoop(AST::Loop* loop)
+{
+	auto condition = dynamic_cast<AST::Expr*>(loop->children[0]);
+	auto block = loop->children[1];
+	while (CheckCondition(condition))
+	{
+		if (!Eval(block)) {
+			break;
+		}
+	}
+	return true;
+}
+
+bool Interpreter::EvalRet(AST::Ret* ret)
+{
+	if (auto expr = dynamic_cast<AST::Expr*>(ret->children[0]))
+	{
+		EvalExpr(expr);
+	}
+	return false;
+}
+
+int Interpreter::EvalArray(AST::Array* arr)
+{
+	int location = static_cast<int>(_curEnv->_variable.size()) + 1;
+	int length = 0;
+	_curEnv->_push(length);
+	for (;;)
+	{
+		auto v = dynamic_cast<AST::Expr*>(AST::L(arr));
+		if (!v) return -1;
+		if (!EvalExpr(v)) return -1;
+		auto value = _curEnv->pop();
+		if (!value.has_value()) return false;
+		_curEnv->_push(value.value());
+		_curEnv->_variable[location - 1] = { 'len', ++length }; //cookie
+		arr = dynamic_cast<AST::Array*>(AST::R(arr));
+		if (!arr) break;
+	}
+	return location;
+}
+
+bool Interpreter::EvalAt(AST::At* at)
+{
+	auto v = _curEnv->get(static_cast<AST::ID*>(AST::L(at))->id);
+	if (!v.has_value()) return false;
+	int location = v.value().value.iValue;
+	if (auto off = dynamic_cast<AST::Expr*>(AST::R(at)))
+	{
+		EvalExpr(off);
+		auto value = _curEnv->pop();
+		if (!value.has_value()) return false;
+		int offset = static_cast<int>(value.value().value.dValue);
+		int length = _curEnv->_variable[location - 1].value.iValue;
+		if (offset >= length)
+		{
+			std::cout << "Error: " << "out of range" << std::endl;
+			return false;
+		}
+		auto v = _curEnv->at(location + offset);
+		if (!v.has_value()) return false;
+		_curEnv->push(v.value());
 	}
 	return true;
 }
@@ -159,36 +281,84 @@ bool Interpreter::EvalStats(AST::AST* stat)
 {
 	if (auto echo = dynamic_cast<AST::Echo*>(stat))
 	{
-		return EvalEcho(echo);
+		if (!EvalEcho(echo))
+		{
+			std::cout << "Error: echo error." << std::endl;
+		}
+		return true;
 	}
 	if (auto ass = dynamic_cast<AST::BinExpr<'='>*>(stat))
 	{
-		auto id = dynamic_cast<AST::ID*>(AST::L(ass));
-		if (!id)
+		if (auto id = dynamic_cast<AST::ID*>(AST::L(ass)))
 		{
-			return false;
+			if (EvalAssignment(id->id, AST::R(ass)))
+			{
+				return true;
+			}
 		}
-		if (EvalAssignment(id->id, AST::R(ass)))
+		else if (auto at = dynamic_cast<AST::At*>(AST::L(ass)))
 		{
-			return true;
+			auto v = _curEnv->get(static_cast<AST::ID*>(AST::L(at))->id);
+			if (!v.has_value()) return false;
+			int location = v.value().value.iValue;
+			if (auto off = dynamic_cast<AST::Expr*>(AST::R(at)))
+			{
+				EvalExpr(off);
+				auto value = _curEnv->pop();
+				if (!value.has_value()) return false;
+				int offset = static_cast<int>(value.value().value.dValue);
+				int length = _curEnv->_variable[location - 1].value.iValue;
+				if (offset >= length)
+				{
+					std::cout << "Error: " << "out of range" << std::endl;
+					return false;
+				}
+				auto v = dynamic_cast<AST::Expr*>(AST::R(ass));
+				if (!v) return -1;
+				if (!EvalExpr(v)) return -1;
+				auto v2 = _curEnv->pop();
+				if (!v2.has_value()) return false;
+				_curEnv->_variable[location + offset] = v2.value();
+				return true;
+			}
 		}
+		std::cout << "EError: Assignment error. " << std::endl;
 		return false;
 	}
 	if (auto funcdef = dynamic_cast<AST::FuncDef*>(stat)) {
-		return EvalFuncDef(funcdef);
+		if (!EvalFuncDef(funcdef))
+		{
+			std::cout << "EError: funcdef error." << std::endl;
+			return false;
+		}
+		return true;
 	}
 	if (auto funcall = dynamic_cast<AST::FunCall*>(stat))
 	{
-		return EvalFunCall(funcall);
+		if (!EvalFunCall(funcall))
+		{
+			std::cout << "EError: funcall error." << std::endl;
+			return false;
+		}
+		return true;
 	}
+
 	if (auto ifstat = dynamic_cast<AST::IF*>(stat))
 	{
 		return EvalIf(ifstat);
 	}
-	//????
+	if (auto loop = dynamic_cast<AST::Loop*>(stat))
+	{
+		return EvalLoop(loop);
+	}
+
 	if (auto e = dynamic_cast<AST::BinExpr<>*>(stat))
 	{
-		if (!EvalExpr(e)) { return false; }
+		if (!EvalExpr(e))
+		{
+			std::cout << "EError: Expr error." << std::endl;
+			return false;
+		}
 		Print(_curEnv->top()->value.dValue);
 		return true;
 	}
@@ -210,12 +380,22 @@ bool Interpreter::EvalAssignment(int id, AST::AST* value)
 	}
 	if (auto expr = dynamic_cast<AST::BinExpr<>*>(value))
 	{
-		//???????????
-		if (!EvalExpr(expr)) { return false; }
+		if (!EvalExpr(expr)) {
+			return false;
+		}
 		auto result = _curEnv->pop();
 		if (!result.has_value()) { return false; }
 		_curEnv->push(id, result.value());
 		return true;
+	}
+	if (auto arr = dynamic_cast<AST::Array*>(value))
+	{
+		if (int loc = EvalArray(arr); loc != -1)
+		{
+			_curEnv->push(id, 'arr', loc);
+			return true;
+		}
+		return false;
 	}
 	if (auto funcall = dynamic_cast<AST::FunCall*>(value))
 	{
@@ -249,7 +429,7 @@ bool Interpreter::EvalEcho(AST::Echo* echo)
 		return true;
 	}
 	Print(typeid(*childern).name());
-	//???
+
 	return false;
 }
 
@@ -267,34 +447,17 @@ bool Interpreter::EvalExpr(AST::Expr* expr)
 	}
 	if (auto neg = dynamic_cast<AST::Negative*>(expr))
 	{
-		if (auto e = dynamic_cast<AST::Expr*>(AST::L(neg))) {
-			if (!EvalExpr(e)) { return false; }
-			_curEnv->push(-_curEnv->pop()->value.dValue);
-			return true;
-		}
-		return false;
+		return EvalNeg(neg);
 	}
 	if (auto id = dynamic_cast<AST::ID*>(expr))
 	{
-		auto value = getVar(id->id);
-		if (!value.has_value()) { return false; }
-		switch (value->type)
-		{
-		case 'num':
-			_curEnv->push(value->value.dValue);
-			break;
-		case 'str':
-			_curEnv->push(atof(StringTable::getInstance().GetStr(value->value.iValue)));
-			break;
-		case 'bool':
-			_curEnv->push((double)value->value.bValue);
-			break;
-		default:
-			_curEnv->push(0);
-			break;
-		}
-		return true;
+		return EvalID(id);
 	}
+	if (auto at = dynamic_cast<AST::At*>(expr))
+	{
+		return EvalAt(at);
+	}
+
 	AST::Tree<2>* node;
 	if (node = dynamic_cast<AST::Tree<2>*>(expr); !node) { return false; }
 
@@ -399,6 +562,38 @@ bool Interpreter::EvalExpr(AST::Expr* expr)
 	return false;
 }
 
+bool Interpreter::EvalNeg(AST::Negative* neg)
+{
+	if (auto e = dynamic_cast<AST::Expr*>(AST::L(neg))) {
+		if (!EvalExpr(e)) { return false; }
+		_curEnv->push(-_curEnv->pop()->value.dValue);
+		return true;
+	}
+	return false;
+}
+
+bool Interpreter::EvalID(AST::ID* id)
+{
+	auto value = getVar(id->id);
+	if (!value.has_value()) { return false; }
+	switch (value->type)
+	{
+	case 'num':
+		_curEnv->push(value->value.dValue);
+		break;
+	case 'str':
+		_curEnv->push(atof(StringTable::getInstance().GetStr(value->value.iValue)));
+		break;
+	case 'bool':
+		_curEnv->push((double)value->value.bValue);
+		break;
+	default:
+		_curEnv->push(0);
+		break;
+	}
+	return true;
+}
+
 inline const char* Interpreter::EvalStr(AST::StrValue* str)
 {
 	return 	StringTable::getInstance().GetStr(str->id);
@@ -432,7 +627,7 @@ inline int Env::find(int id)
 
 inline std::optional<Env::Value> Env::pop()
 {
-	if (_stack.size() < 1) return std::optional<Value>{};
+	if (_stack.size() < 1) return std::nullopt;
 	auto v = _stack.top();
 	_stack.pop();
 	return v;
@@ -440,7 +635,7 @@ inline std::optional<Env::Value> Env::pop()
 
 std::optional<Env::Value> Env::top()
 {
-	if (_stack.size() < 1) return std::optional<Value>{};
+	if (_stack.size() < 1) return std::nullopt;
 	return _stack.top();
 }
 
@@ -450,5 +645,13 @@ inline std::optional<Env::Value> Env::get(int id)
 	{
 		return _variable.at((size_t)iter->second);
 	}
-	return std::optional<Value>{};
+	return std::nullopt;
+}
+
+std::optional<Env::Value> Env::at(int location)
+{
+	if (location >= 0 && location < _variable.size()) {
+		return _variable[location];
+	}
+	return std::nullopt;
 }

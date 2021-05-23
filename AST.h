@@ -1,15 +1,7 @@
 #pragma once
 #include <string>
+#include <vector>
 #include <functional>
-
-//#define SafeDelete(p) \
-//	if((p)!=nullptr){\
-//		delete (p);\
-//		(p)=nullptr;\
-//	}else {}
-
-//#define L children[0]
-//#define R children[1]
 
 template<typename T>
 inline bool SafeDelete(T* p)
@@ -79,12 +71,18 @@ namespace AST
 	struct NumValue : Tree<0>, Expr { double value = 0; };
 	struct StrValue : Tree<0> { int id = 0; };
 	struct BoolValue : Tree<0>, Expr { bool value = false; };
+
+	//获取列表成员
+	struct At : Tree<2>, Expr {};
+
 	//求反节点
 	struct Negative : Tree<1>, Expr {};
 
 	//实参和形参节点
 	struct Args : Tree<2> {};
 	struct Params : Tree<2> {};
+	//列表
+	struct Array : Tree<2> {};
 
 	//语句节点
 	struct Stats : Tree<2> {};
@@ -93,6 +91,8 @@ namespace AST
 	struct FunCall : Tree<2> {};
 	struct IF : Tree<3> {};
 	struct Else : Tree<1> {};
+	struct Loop : Tree<2> {};
+	struct Ret : Tree<1> {};
 
 	//获取左孩子
 	template<typename T, typename Enable = std::enable_if_t<1 <= std::extent_v<decltype(T::children)>>>

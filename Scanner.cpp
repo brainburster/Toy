@@ -12,12 +12,10 @@ Token::Token IScanner::GetToken()
 {
 	_cur = _buffer.peek();
 
-	////忽略空白
 	IgnoreBlank();
 
-	//处理注释
 	IgnoreComment();
-	//文件结尾
+
 	if (EOF == _cur)
 	{
 		return { 'end',0 };
@@ -29,7 +27,7 @@ Token::Token IScanner::GetToken()
 		return { 'str',StringTable::getInstance().GetId(str.c_str()) };
 	}
 
-	if ('_' == _cur || _cur > 127) //>127表示多字节字符,假设这里不使用宽字符,即文字中间没有0x00空位
+	if ('_' == _cur || _cur > 127)
 	{
 		std::string str = GetIdentifierOrKeyword();
 		return { 'id', StringTable::getInstance().GetId(str.c_str()) };
@@ -65,12 +63,11 @@ Token::Token IScanner::GetToken()
 	{
 		return { op,0 };
 	}
-	////没有匹配到
+
 	Read();
 	return { 'err', 0 };
 }
 
-//私有函数可以在cpp文件里设置为inline
 inline void IScanner::Read()
 {
 	_last = _buffer.get();
@@ -255,10 +252,17 @@ int IScanner::GetKeyWord(const std::string& str)
 	{
 		return 'goto';
 	}
+	if (str.compare("return") == 0)
+	{
+		return 'ret';
+	}
+	if (str.compare("loop") == 0)
+	{
+		return 'loop';
+	}
 	return 0;
 }
 
-////4字节大端、小端转换
 //int EndianChange( int i )
 //{
 //	return ((i & 0x000000FF) << 24) | ((i & 0x0000FF00) << 8) | ((i & 0x00FF0000) >> 8) | ((i & 0xFF000000) >> 24);

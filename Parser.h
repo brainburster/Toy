@@ -23,7 +23,6 @@ private:
 	AST::AST* Echo();
 	AST::AST* Expr();
 	AST::AST* TermExpr();
-	AST::AST* FactorExpr();
 	AST::AST* PrimExpr();
 	AST::AST* Assignment();
 	AST::AST* Num();
@@ -42,8 +41,12 @@ private:
 	AST::AST* BoolPrim();
 	AST::AST* If();
 	AST::AST* ElseIfList();
+	AST::AST* Ret();
+	AST::AST* Loop();
+	AST::AST* Array();
+	AST::AST* At();
 
-	//Æ¥Åätoken
+	//Æ¥ï¿½ï¿½token
 	template<typename... Args>
 	auto Match(Args... args) ->typename std::enable_if<(std::is_integral_v<Args> &&...), int>::type
 	{
