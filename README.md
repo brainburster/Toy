@@ -18,12 +18,12 @@
 ### 语句
 
 - [x] SS : {S}
-- [x] S : ECHO "(" BE ")" | ASS | BE | FuncDef | Funcall | If
+- [x] S : ECHO "(" BE ")" | ASS | BE | FuncDef | Funcall | If | Loop | Ret
 - [x] ASS : ID "=" VAL
-- [x] VAL : STR | E | BOOL | Funcall
 
 ### 计算表达式
 
+- [x] VAL : STR | E | BOOL | Funcall | AT | ARRAY
 - [x] OP : "+" | "-" | "*" | "/" | "**"
 - [x] E : T { OP T }
 - [x] T : -p | p
@@ -37,6 +37,11 @@
 
 - [x] Args : "(" VAL{"," VAL} ")" | "(" ")"
 - [x] Params : "(" ID{"," ID} ")" | "(" ")"
+
+### 数组
+
+- [x] Array : "[" VAL{"," VAL} ")" | "[" "]"
+- [x] At : ID "[" E "]"
 
 ### 布尔表达式
 
@@ -52,6 +57,8 @@
 - [x] ElseIfList ：Else | ElseIf ElseIfList
 - [x] ElseIf : "elif" "(" BE ")"  Block [ ElseIfList ]
 - [x] Else : "else" Block
+- [x] Loop : "loop" "(" BE ")" Block
+- [x] Ret : "return" {E};
 
 ### 函数
 
