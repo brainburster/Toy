@@ -230,6 +230,10 @@ bool Interpreter::EvalRet(AST::Ret* ret)
 	{
 		EvalExpr(expr);
 	}
+	else
+	{
+		_curEnv->push(Env::Value{ 'null',0 });
+	}
 	return false;
 }
 
@@ -265,7 +269,7 @@ bool Interpreter::EvalAt(AST::At* at)
 		int location = v.value().value.iValue;
 		if (auto off = dynamic_cast<AST::Expr*>(AST::R(at)))
 		{
-			EvalExpr(off);
+			if (!EvalExpr(off)) return false;
 			auto value = _curEnv->pop();
 			if (!value.has_value()) return false;
 			int offset = static_cast<int>(value.value().value.dValue);
@@ -279,6 +283,11 @@ bool Interpreter::EvalAt(AST::At* at)
 			if (!v.has_value()) return false;
 			_curEnv->push(v.value());
 		}
+		else
+		{
+			std::cout << "Error: " << "no index in \"[]\"" << std::endl;
+			return false;
+		}
 	}
 	else
 	{
@@ -287,7 +296,7 @@ bool Interpreter::EvalAt(AST::At* at)
 		int location = vv.value().value.iValue;
 		if (auto off = dynamic_cast<AST::Expr*>(AST::R(at)))
 		{
-			EvalExpr(off);
+			if (!EvalExpr(off)) return false;
 			auto value = _curEnv->pop();
 			if (!value.has_value()) return false;
 			int offset = static_cast<int>(value.value().value.dValue);
@@ -300,6 +309,11 @@ bool Interpreter::EvalAt(AST::At* at)
 			auto v = _global->at(location + offset);
 			if (!v.has_value()) return false;
 			_curEnv->push(v.value());
+		}
+		else
+		{
+			std::cout << "Error: " << "no index in \"[]\"" << std::endl;
+			return false;
 		}
 	}
 	return true;
@@ -330,7 +344,7 @@ bool Interpreter::EvalStats(AST::AST* stat)
 				int location = v.value().value.iValue;
 				if (auto off = dynamic_cast<AST::Expr*>(AST::R(at)))
 				{
-					EvalExpr(off);
+					if (!EvalExpr(off)) return false;
 					auto value = _curEnv->pop();
 					if (!value.has_value()) return false;
 					int offset = static_cast<int>(value.value().value.dValue);
@@ -341,8 +355,8 @@ bool Interpreter::EvalStats(AST::AST* stat)
 						return false;
 					}
 					auto v = dynamic_cast<AST::Expr*>(AST::R(ass));
-					if (!v) return -1;
-					if (!EvalExpr(v)) return -1;
+					if (!v) return false;
+					if (!EvalExpr(v)) return false;
 					auto v2 = _curEnv->pop();
 					if (!v2.has_value()) return false;
 					_curEnv->_variable[location + offset] = v2.value();
@@ -355,7 +369,7 @@ bool Interpreter::EvalStats(AST::AST* stat)
 				int location = vv.value().value.iValue;
 				if (auto off = dynamic_cast<AST::Expr*>(AST::R(at)))
 				{
-					EvalExpr(off);
+					if (!EvalExpr(off)) return false;
 					auto value = _curEnv->pop();
 					if (!value.has_value()) return false;
 					int offset = static_cast<int>(value.value().value.dValue);
@@ -366,8 +380,8 @@ bool Interpreter::EvalStats(AST::AST* stat)
 						return false;
 					}
 					auto v = dynamic_cast<AST::Expr*>(AST::R(ass));
-					if (!v) return -1;
-					if (!EvalExpr(v)) return -1;
+					if (!v) return false;
+					if (!EvalExpr(v)) return false;
 					auto v2 = _curEnv->pop();
 					if (!v2.has_value()) return false;
 					_global->_variable[location + offset] = v2.value();
@@ -382,15 +396,6 @@ bool Interpreter::EvalStats(AST::AST* stat)
 		if (!EvalFuncDef(funcdef))
 		{
 			std::cout << "EError: funcdef error." << std::endl;
-			return false;
-		}
-		return true;
-	}
-	if (auto funcall = dynamic_cast<AST::FunCall*>(stat))
-	{
-		if (!EvalFunCall(funcall))
-		{
-			std::cout << "EError: funcall error." << std::endl;
 			return false;
 		}
 		return true;
@@ -412,7 +417,7 @@ bool Interpreter::EvalStats(AST::AST* stat)
 			std::cout << "EError: Expr error." << std::endl;
 			return false;
 		}
-		Print(_curEnv->top()->value.dValue);
+		//Print(_curEnv->top()->value.dValue);
 		return true;
 	}
 	if (auto str = dynamic_cast<AST::StrValue*>(stat))
@@ -488,6 +493,15 @@ bool Interpreter::EvalEcho(AST::Echo* echo)
 
 bool Interpreter::EvalExpr(AST::Expr* expr)
 {
+	if (auto funcall = dynamic_cast<AST::FunCall*>(expr))
+	{
+		if (!EvalFunCall(funcall))
+		{
+			std::cout << "EError: funcall error." << std::endl;
+			return false;
+		}
+		return true;
+	}
 	if (auto d = dynamic_cast<AST::NumValue*>(expr))
 	{
 		_curEnv->push(d->value);
