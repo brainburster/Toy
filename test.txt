@@ -1,55 +1,44 @@
-#"计算测试:"
-echo((233+666)*450)
-114*1000+514
-"变量测试:"
-a = 1+2
-b = 4
-b = a**b
-echo(-b)
+#瀹氫箟鏁扮粍
+arr = [3,12,5,2,1,6,7,9,4,8,0,11,10]
+#鎵撳嵃鏁扮粍
+echo("before sort:");
+echo(arr)
 
-"中文变量测试:"
-中文变量 = "你好" #这是个注释
-a = "世界"
-echo(中文变量)
-#echo(a)
+#瀹氫箟鎺掑簭鍑芥暟
+func fast_sort(head, tail){
+    if(head>=tail){
+        return;
+    }
+    x = arr[head];
+    i = head;
+    j = tail;
 
-"函数测试:"
-func foo(){
-	echo("hello world")
-}
+    loop(i<j)
+    {
+        loop (i < j && arr[j] >= x){
+            j=j-1;
+        }
+        if (i < j){
+            arr[i] = arr[j];
+            i=i+1;
+        }
 
-func add(a,b){
-	"形参不会影响全局变量"
-	foo()
-	a+b
-}
-sum = add(1,2)
-echo(sum**sum)
-
-if(!true)
-{
-	echo("false")
-}
-else
-{
-	echo(a)
-}
-
-if((1+1==2)&&!false)
-{
-	echo("1+1=2")
+        loop (i < j && arr[i] < x){
+            i=i+1;
+        }
+        if (i < j){
+            arr[j] = arr[i];
+            j=j-1;
+        }
+    }
+    arr[i] = x;
+    fast_sort(head, i-1);
+    fast_sort(i+1, tail);
 }
 
-a=3
-if(a==1)
-{
-	echo("a=1")
-}
-elif(a==2)
-{
-	echo("a=2")
-}
-else
-{
-	echo("a=3")
-}
+#鎺掑簭
+fast_sort(0,12);
+
+#鎵撳嵃鏁扮粍
+echo("after sort:");
+echo(arr)

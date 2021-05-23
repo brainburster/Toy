@@ -38,8 +38,8 @@ AST::AST* Parser::Parse(IScanner&& s)
 		_buffer.push_back(t);
 		if (t.type == 'end') break;
 	};
-	//打印词法分析结果
-	std::cout << "词法分析完成：" << std::endl;
+
+	std::cout << "璇嶆硶鍒嗘瀽瀹屾垚:" << std::endl;
 	for (const auto& t : _buffer)
 	{
 		std::cout << s.Token2String(t) << std::endl;
@@ -55,7 +55,6 @@ AST::AST* Parser::Stats()
 	{
 		if (Match('end') || '}' == Peek().type)
 		{
-			//std::cout << "语法分析完成:" << std::endl;
 			AST::L(p) = AST::Create<AST::ACC>();
 			break;
 		}
@@ -65,7 +64,7 @@ AST::AST* Parser::Stats()
 		}
 		else if (auto stat = Stat())
 		{
-			AST::L(p) = stat; //左子树当前语句
+			AST::L(p) = stat;
 		}
 		else
 		{
@@ -74,7 +73,7 @@ AST::AST* Parser::Stats()
 		}
 
 		auto* next = AST::Create<AST::Stats>();
-		AST::R(p) = next; //右子树下一段语句
+		AST::R(p) = next;
 		p = next;
 	}
 	return head;
@@ -89,6 +88,8 @@ AST::AST* Parser::Stat()
 	if (auto funcdef = FuncDef()) return funcdef;
 	if (auto funcall = FunCall()) return funcall;
 	if (auto ifstat = If()) return ifstat;
+	if (auto ret = Ret()) return ret;
+	if (auto loop = Loop()) return loop;
 	return nullptr;
 }
 
@@ -154,7 +155,6 @@ AST::AST* Parser::Expr()
 			return nullptr;
 		}
 
-		//判断运算符优先级
 		if (opp(op1) <= opp(op2))
 		{
 			switch (op1)
@@ -225,6 +225,7 @@ AST::AST* Parser::TermExpr()
 AST::AST* Parser::PrimExpr()
 {
 	AST::AST* e;
+	if (auto at = At()) return at;
 	if (auto id = ID()) return id;
 	if (auto num = Num()) return num;
 	if (!Match('(')) return nullptr;
@@ -241,14 +242,31 @@ AST::AST* Parser::STR()
 
 AST::AST* Parser::Assignment()
 {
-	if (!Match('id', '=') && !Match('id', ':=') && !Match('id', ':')) return nullptr;
-	Seek(-2);
-	auto id = ID();
-	if (Match('=') || Match(':='))
+	if (Match('id', '='))
 	{
-		auto val = Value();
-		if (!val) { SafeDelete(id); return nullptr; }
-		return AST::CreateBinExpr<'='>(id, val);
+		Seek(-2);
+		auto id = ID();
+		if (Match('='))
+		{
+			auto val = Value();
+			if (!val) { SafeDelete(id); return nullptr; }
+			return AST::CreateBinExpr<'='>(id, val);
+		}
+	}
+	else if (Match('id', '['))
+	{
+		Seek(-2);
+		auto at = At();
+		if (Match('='))
+		{
+			auto val = Value();
+			if (!val) { SafeDelete(at); return nullptr; }
+			return AST::CreateBinExpr<'='>(at, val);
+		}
+		else
+		{
+			return at;
+		}
 	}
 	return nullptr;
 }
@@ -277,6 +295,7 @@ AST::AST* Parser::Value()
 	if (auto b = BOOL()) return b;
 	if (auto e = Expr()) return e;
 	if (auto str = STR()) return str;
+	if (auto arr = Array()) return arr;
 	return nullptr;
 }
 
@@ -462,7 +481,56 @@ AST::AST* Parser::ElseIfList()
 	return nullptr;
 }
 
-//打印抽象语法树
+AST::AST* Parser::Ret()
+{
+	if (Match('ret'))
+	{
+		auto v = Value();
+		return AST::Create<AST::Ret>(v);
+	}
+	return nullptr;
+}
+
+AST::AST* Parser::Loop()
+{
+	if (!Match('loop', '(')) return nullptr;
+	auto condition = BoolExpr();
+	if (!Match(')')) { SafeDelete(condition); return nullptr; }
+	auto block = Block();
+	if (!block) { SafeDelete(condition); return nullptr; }
+	return AST::Create<AST::Loop>(condition, block);
+}
+
+AST::AST* Parser::Array()
+{
+	if (Match('[', ']')) return AST::Create<AST::Array>();
+	if (!Match('[')) return nullptr;
+	auto head = AST::Create<AST::Array>();
+	auto arg = head;
+	do {
+		auto value = Value();
+		if (!value) return nullptr;
+		AST::L(arg) = value;
+		if (Match(']')) { return head; }
+		auto temp = AST::Create<AST::Array>();
+		AST::R(arg) = temp;
+		arg = temp;
+	} while (Match(','));
+	SafeDelete(head);
+	return nullptr;
+}
+
+AST::AST* Parser::At()
+{
+	if (!Match('id', '['))return nullptr;
+	Seek(-2);
+	auto id = ID();
+	if (!Match('[')) return id;
+	auto v = Value();
+	if (!Match(']')) { SafeDelete(v); return nullptr; }
+	return AST::Create<AST::At>(id, v);
+}
+
 void Parser::PrintAST(AST::AST* ast, int n)
 {
 	if (!ast)
