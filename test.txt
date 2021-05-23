@@ -1,7 +1,5 @@
 #定义数组
 arr = [3,12,5,2,1,6,7,9,4,8,0,11,10]
-func arr_length(){return 12;}
-
 #打印数组
 echo("before sort:");
 echo(arr)
@@ -9,7 +7,7 @@ echo(arr)
 #定义排序函数
 func fast_sort(head, tail){
     if(head>=tail){
-        return 0;
+        return;
     }
     x = arr[head];
     i = head;
@@ -36,11 +34,10 @@ func fast_sort(head, tail){
     arr[i] = x;
     fast_sort(head, i-1);
     fast_sort(i+1, tail);
-    return 0;
 }
 
 #排序
-fast_sort(0, arr_length());
+fast_sort(0,12);
 
 #打印数组
 echo("after sort:");

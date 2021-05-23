@@ -88,7 +88,7 @@ namespace AST
 	struct Stats : Tree<2> {};
 	struct Echo : Tree<1> {};
 	struct FuncDef : Tree<3> {};
-	struct FunCall : Tree<2>, Expr {};
+	struct FunCall : Tree<2> {};
 	struct IF : Tree<3> {};
 	struct Else : Tree<1> {};
 	struct Loop : Tree<2> {};
