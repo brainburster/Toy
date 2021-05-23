@@ -238,6 +238,11 @@ int Interpreter::EvalArray(AST::Array* arr)
 	int location = static_cast<int>(_curEnv->_variable.size()) + 1;
 	int length = 0;
 	_curEnv->_push(length);
+	if (!AST::L(arr))
+	{
+		_curEnv->_push(0);
+		return location;
+	}
 	for (;;)
 	{
 		auto v = dynamic_cast<AST::Expr*>(AST::L(arr));
@@ -438,7 +443,7 @@ bool Interpreter::EvalAssignment(int id, AST::AST* value)
 	}
 	if (auto arr = dynamic_cast<AST::Array*>(value))
 	{
-		if (int loc = EvalArray(arr); loc != -1)
+		if (int loc = EvalArray(arr); loc > -1)
 		{
 			_curEnv->push(id, 'arr', loc);
 			return true;
