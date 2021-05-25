@@ -4,21 +4,30 @@
   <head>
     <meta charset="utf-8" />
     <title>toy解释器</title>
+    <style>
+      .code-area{
+        background-color: black;
+        color:lightgray;
+      }
+    </style>
   </head>
 
   <body>
-    <textarea name="" id="input" cols="50" rows="60" spellcheck="false"></textarea>
-    <textarea name="" id="output" cols="50" rows="60" spellcheck="false" readonly="readonly"></textarea>
+    <textarea class="code-area" id="input" cols="50" rows="60" spellcheck="false"></textarea>
+    <textarea class="code-area" id="output" cols="50" rows="60" spellcheck="false" readonly="readonly"></textarea>
     <script>
       const input = document.getElementById("input");
       const output = document.getElementById("output");
       Module = {};
       input.value = `\
 #定义数组
-arr = [3,12,5,2,1,6,7,9,4,8,0,11,10]
+arr = [3,12,5,2,1,6,7,9,4,8,0,11,10];
+func arr_length(){ return 12; };
+
 #打印数组
+echo("输出:")
 echo("before sort:");
-echo(arr)
+echo(arr);
 
 #定义排序函数
 func fast_sort(head, tail){
@@ -57,10 +66,11 @@ fast_sort(0,12);
 
 #打印数组
 echo("after sort:");
-echo(arr)
+echo(arr);
 
-你好 = "你好世界"
-echo(你好)
+#变量
+你好 = "你好世界";
+echo(你好);
 `;
       let old = "";
       const update = () => {
