@@ -4,7 +4,7 @@
 
 ## wasm版本
 
-  <https://brainburster.github.io/toy/wasm/toy.html>
+  <https://brainburster.github.io/Toy/wasm/toy.html>
 
 ## 终结符
 
